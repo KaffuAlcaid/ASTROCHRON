@@ -1,2 +1,4 @@
 /.cache/
 /docs/design.md
+/node_modules/
+/CMakeUserPresets.json
