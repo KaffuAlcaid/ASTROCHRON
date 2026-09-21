@@ -8,16 +8,22 @@ Natural Earth 矢量与栅格地图数据属于公有领域。原始压缩包中
 
 使用条款：<https://www.naturalearthdata.com/about/terms-of-use/>
 
-## 地图资源工具
+## Astronomy Engine
 
-以下工具用于制作地图资源：
+来源：<https://github.com/cosinekitty/astronomy>
 
-| 工具 | 许可 | 来源 |
-| --- | --- | --- |
-| mapshaper | MPL-2.0 | <https://github.com/mbloch/mapshaper> |
-| earcut | ISC | <https://github.com/mapbox/earcut> |
-| d3-geo | ISC | <https://github.com/d3/d3-geo> |
-| d3-geo-projection | ISC | <https://github.com/d3/d3-geo-projection> |
-| fflate | MIT | <https://github.com/101arrowz/fflate> |
+版本：`865d3da7d8112bbc7911238052c6af4aaf877181`。许可：MIT。
 
-具体软件版本记录在 `package-lock.json` 中，各依赖包保留其原始许可证。
+完整许可见 `third_party/astronomy-engine/LICENSE`。
+
+## Lucide
+
+来源：<https://lucide.dev/>。版本：1.47.0。许可：ISC。
+
+完整许可见 `assets/icons/LICENSE`。
+
+## Qt
+
+来源：<https://www.qt.io/>。Qt 6.11 运行库采用动态链接，按 LGPL-3.0 许可使用。
+
+许可条款：<https://www.qt.io/licensing/open-source-lgpl-obligations>
