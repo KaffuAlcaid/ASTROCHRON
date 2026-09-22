@@ -103,12 +103,13 @@ void CatalogModel::rebuild()
     const auto search = m_search.trimmed();
     if (m_source) {
         QHash<QString, QVector<int>> groups;
+        const bool localMembers = m_source->usingLocalConstellation();
         for (const int index : m_source->m_targets) {
             const auto &satellite = m_source->m_satellites[index];
             const auto key = m_source->constellationKey(satellite);
             ++m_counts[key];
             if (m_source->m_group != "catalog") {
-                bool inSource = false;
+                bool inSource = localMembers && key == m_source->m_group;
                 const auto members = m_source->m_groupMembers.value(m_source->m_group);
                 for (const int member : m_source->m_members.value(satellite.number))
                     if (members.contains(m_source->m_satellites[member].number)) inSource = true;

@@ -131,13 +131,21 @@ QVariantList SatelliteModel::groups() const
     return result;
 }
 
+bool SatelliteModel::usingLocalConstellation() const
+{
+    return !m_groupMembers.contains(m_group)
+        && (m_group == "gps-ops" || m_group == "glo-ops" || m_group == "galileo" || m_group == "beidou");
+}
+
 QVariantMap SatelliteModel::groupInfo() const
 {
     if (m_group == "catalog") return {{"description", QStringLiteral("各来源按卫星编号合并，空间站组合体合并显示")}};
     const auto source = m_groupSources.value(m_group);
     const bool operational = m_group == "gps-ops" || m_group == "glo-ops";
-    return {{"description", operational ? QStringLiteral("运行组采用 CelesTrak 分组，实时导航健康状态以系统公告为准")
+    return {{"description", usingLocalConstellation() ? QStringLiteral("当前显示：本地目录中的%1对象").arg(CatalogModel::constellationName(m_group))
+                                        : operational ? QStringLiteral("运行组采用 CelesTrak 分组，实时导航健康状态以系统公告为准")
                                         : m_group == "local" ? QStringLiteral("所选本地轨道文件中的对象") : QStringLiteral("CelesTrak 所选分组中的对象")},
+        {"localMembers", usingLocalConstellation()},
         {"acquired", source.acquired ? QDateTime::fromSecsSinceEpoch(source.acquired, QTimeZone::UTC).toString("yyyy-MM-dd HH:mm:ss 'UTC'") : QString()},
         {"source", source.url}, {"loaded", m_groupMembers.contains(m_group)},
         {"count", static_cast<int>(m_groupMembers.value(m_group).size())}};
@@ -239,7 +247,16 @@ void SatelliteModel::refresh()
     setStatus(QStringLiteral("正在获取轨道数据"));
     connect(reply, &QNetworkReply::finished, this, [this, reply, group, url] {
         reply->deleteLater(); m_downloading = false;
-        if (reply->error() != QNetworkReply::NoError) { setStatus(QStringLiteral("轨道数据获取失败：") + reply->errorString()); return; }
+        if (reply->error() != QNetworkReply::NoError) {
+            const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            if (httpStatus >= 500)
+                setStatus(QStringLiteral("CelesTrak 服务暂时异常（HTTP %1），本地轨道资料仍可使用").arg(httpStatus));
+            else if (httpStatus > 0)
+                setStatus(QStringLiteral("CelesTrak 请求失败（HTTP %1），本地轨道资料仍可使用").arg(httpStatus));
+            else
+                setStatus(QStringLiteral("轨道数据获取失败：网络连接异常（错误 %1），本地轨道资料仍可使用").arg(static_cast<int>(reply->error())));
+            return;
+        }
         const auto payload = reply->readAll();
         QString error; int skipped = 0;
         auto satellites = Orbit::parse(payload, error, skipped);

@@ -81,7 +81,8 @@ Dialog {
         }
         Label {
             visible: dialog.satellites.group !== "catalog"
-            text: dialog.satellites.groupInfo.loaded ? "来源记录 " + dialog.satellites.groupInfo.count + " · 获取时间 " + dialog.satellites.groupInfo.acquired : "分组资料待获取"
+            text: dialog.satellites.groupInfo.loaded ? "来源记录 " + dialog.satellites.groupInfo.count + " · 获取时间 " + dialog.satellites.groupInfo.acquired
+                : dialog.satellites.groupInfo.localMembers ? "来源分组待获取 · 列表按本地目录归类" : "分组资料待获取"
             color: Theme.muted
             font.pixelSize: 11
             Layout.fillWidth: true
@@ -178,7 +179,7 @@ Dialog {
                     }
                     Label {
                         visible: entry.isGroup
-                        text: (dialog.catalog.search.trim().length ? "匹配 " : dialog.satellites.group === "catalog" ? "目录 " : "组内 ") + entry.memberCount
+                        text: (dialog.catalog.search.trim().length ? "匹配 " : dialog.satellites.group === "catalog" || dialog.satellites.groupInfo.localMembers ? "目录 " : "组内 ") + entry.memberCount
                         color: Theme.muted
                         font.family: Theme.numberFont
                         font.pixelSize: 13
@@ -253,7 +254,10 @@ Dialog {
             Label {
                 anchors.centerIn: parent
                 visible: entries.count === 0
-                text: dialog.satellites.downloading ? "正在获取目录分组" : "暂无匹配目标"
+                text: dialog.catalog.search.trim().length ? "暂无匹配目标"
+                    : dialog.satellites.downloading ? "正在获取目录分组"
+                    : dialog.satellites.groupInfo.localMembers ? "本地目录中暂无该星座的对象"
+                    : dialog.satellites.group !== "catalog" && !dialog.satellites.groupInfo.loaded ? "分组资料待获取" : "本组暂无目标"
                 color: Theme.muted
             }
         }

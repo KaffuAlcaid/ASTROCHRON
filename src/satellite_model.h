@@ -127,6 +127,7 @@ private:
     struct Photometry { double magnitude = 0; int phase = 90; QString source; bool manual = false; };
     void updateMagnitude();
     QString constellationKey(const Orbit::Satellite &satellite) const;
+    bool usingLocalConstellation() const;
     void filter();
     void requestFrame();
     void invalidate();
