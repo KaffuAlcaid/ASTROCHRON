@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 880
     minimumHeight: 720
     visible: true
-    title: "ASTROCHRON · 星纪"
+    title: "ASTROCHRON"
     font.family: Theme.fontFamily
     font.pixelSize: Theme.bodySize
     color: Theme.background
@@ -88,19 +88,9 @@ ApplicationWindow {
                 anchors.rightMargin: 12
                 spacing: 12
                 Label {
-                    text: "星纪"
+                    text: "ASTROCHRON"
                     font.pixelSize: 20
                     font.bold: true
-                }
-                Label {
-                    text: "ASTROCHRON"
-                    font.pixelSize: 11
-                    color: Theme.muted
-                }
-                Label {
-                    text: "卫星观测"
-                    Layout.leftMargin: 8
-                    font.pixelSize: 13
                 }
                 Item {
                     Layout.fillWidth: true
