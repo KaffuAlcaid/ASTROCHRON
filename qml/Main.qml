@@ -58,6 +58,10 @@ ApplicationWindow {
         id: weatherModel
         clock: appState
     }
+    CatalogModel {
+        id: catalogModel
+        source: satelliteModel
+    }
     Binding {
         target: Theme
         property: "dark"
@@ -194,10 +198,12 @@ ApplicationWindow {
         SatelliteSidebar {
             id: sidebar
             satellites: satelliteModel
+            catalog: catalogModel
             SplitView.minimumWidth: 200
             SplitView.maximumWidth: 320
             SplitView.preferredWidth: preferences.sidebarWidth
-            onImportRequested: importDialog.open()
+            onCatalogRequested: catalogDialog.openAll()
+            onGroupRequested: key => catalogDialog.openGroup(key)
             onTargetActivated: if (window.compact)
                 detailDrawer.open()
         }
@@ -272,6 +278,13 @@ ApplicationWindow {
         id: settingsDialog
         clock: appState
         weather: weatherModel
+    }
+    CatalogDialog {
+        id: catalogDialog
+        satellites: satelliteModel
+        catalog: catalogModel
+        onImportRequested: importDialog.open()
+        onInspectionRequested: window.showDetails()
     }
     FileDialog {
         id: importDialog

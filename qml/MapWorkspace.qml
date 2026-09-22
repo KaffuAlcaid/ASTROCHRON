@@ -27,6 +27,37 @@ ColumnLayout {
                 worldMap.centerOn(workspace.observation.longitude, workspace.observation.latitude);
         }
     }
+    RowLayout {
+        visible: workspace.satellites.previewActive
+        Layout.fillWidth: true
+        Layout.leftMargin: 12
+        Layout.rightMargin: 8
+        Layout.topMargin: 4
+        Label {
+            text: "预览：" + workspace.satellites.previewName + " · " + workspace.satellites.previewTotal
+            font.pixelSize: 12
+            elide: Text.ElideRight
+            Layout.fillWidth: true
+        }
+        ComboBox {
+            model: ["高于最低高度角", "未来 15 min 过境", "显示全部位置"]
+            currentIndex: workspace.satellites.previewMode
+            implicitWidth: 160
+            implicitHeight: 28
+            font.pixelSize: 12
+            onActivated: workspace.satellites.previewMode = currentIndex
+        }
+        Label {
+            text: workspace.satellites.previewBusy ? "计算中" : workspace.satellites.previewCount + " 个"
+            color: Theme.muted
+            font.pixelSize: 11
+        }
+        IconButton {
+            icon.source: "qrc:/icons/x.svg"
+            tip: "结束星座预览"
+            onClicked: workspace.satellites.closePreview()
+        }
+    }
     MapToolbar {
         Layout.fillWidth: true
         Layout.leftMargin: 12
@@ -81,6 +112,15 @@ ColumnLayout {
             property color nightColor: Theme.dark ? "#66081117" : "#302d4249"
             property color lineColor: Theme.dark ? "#b3c49a69" : "#a6b57a36"
             fragmentShader: "qrc:/shaders/daynight.frag.qsb"
+        }
+        OrbitLayer {
+            id: gnssLayer
+            anchors.fill: parent
+            visible: layers.gnss
+            map: worldMap
+            markers: workspace.satellites.gnssMarkers
+            markerColor: Theme.marker
+            z: 1
         }
         OrbitLayer {
             id: orbitLayer
@@ -180,7 +220,9 @@ ColumnLayout {
                     workspace.clock.setObserver("地图选点", point.y, point.x, NaN, workspace.clock.timeZone);
                     workspace.picking = false;
                 } else if (dragDistance < 4) {
-                    const id = orbitLayer.satelliteAt(mouse.x, mouse.y);
+                    let id = orbitLayer.satelliteAt(mouse.x, mouse.y);
+                    if (!id.length && layers.gnss)
+                        id = gnssLayer.satelliteAt(mouse.x, mouse.y);
                     if (id.length) {
                         workspace.satellites.select(id);
                         workspace.targetActivated();

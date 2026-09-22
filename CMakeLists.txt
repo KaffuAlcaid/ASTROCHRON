@@ -47,6 +47,7 @@ qt_add_qml_module(astrochron
         qml/SatelliteSidebar.qml qml/MapToolbar.qml qml/LayerMenu.qml
         qml/MapWorkspace.qml qml/PassTable.qml qml/ObservationPane.qml qml/Timeline.qml
         qml/ObserverDialog.qml qml/SettingsDialog.qml
+        qml/CatalogDialog.qml
     SOURCES
         src/app_state.h src/app_state.cpp
         src/map_data.h src/map_data.cpp
@@ -54,6 +55,7 @@ qt_add_qml_module(astrochron
         src/orbit_engine.h src/orbit_engine.cpp
         src/satellite_model.h src/satellite_model.cpp
         src/weather_model.h src/weather_model.cpp
+        src/catalog_model.h src/catalog_model.cpp
         src/orbit_layer.h src/orbit_layer.cpp
 )
 target_include_directories(astrochron PRIVATE src)
@@ -82,6 +84,7 @@ qt_add_resources(astrochron icons
         assets/icons/refresh-cw.svg assets/icons/download.svg assets/icons/folder-open.svg
         assets/icons/copy.svg assets/icons/crosshair.svg
         assets/icons/info.svg
+        assets/icons/x.svg assets/icons/chevron-down.svg assets/icons/chevron-right.svg
 )
 qt_add_shaders(astrochron daynight_shader
     PREFIX /

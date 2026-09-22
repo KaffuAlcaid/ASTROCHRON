@@ -11,8 +11,6 @@
 * **本地观测地点**：通过城市选择、经纬度输入或地图选点保存常用位置。
 
 首版面向 Windows 11，使用 C++ 与 Qt 开发。
+轨道数据来自 [CelesTrak](https://celestrak.org/NORAD/elements/)，地图数据来自 [Natural Earth](https://www.naturalearthdata.com/)。
 
-
-
-参考项目：[ShenMian/tracker](https://github.com/ShenMian/tracker)。地图数据来自 [Natural Earth](https://www.naturalearthdata.com/)。
-
+参考项目：[ShenMian/tracker](https://github.com/ShenMian/tracker)。

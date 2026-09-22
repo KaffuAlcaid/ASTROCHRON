@@ -89,6 +89,13 @@ ColumnLayout {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                 }
+                Button {
+                    visible: pane.satellites.selectedId !== "0" && !pane.satellites.selectedWatched
+                    text: "加入观测清单"
+                    icon.source: "qrc:/icons/plus.svg"
+                    icon.color: Theme.text
+                    onClicked: pane.satellites.setWatched(pane.satellites.selectedId, true)
+                }
                 Label {
                     text: pane.obs.visibility || ""
                     color: pane.obs.elevation >= pane.clock.minimumElevation && pane.obs.illumination === 0 && pane.obs.sunElevation <= -6 ? Theme.accent : Theme.muted

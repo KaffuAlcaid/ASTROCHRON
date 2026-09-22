@@ -6,6 +6,7 @@ Flow {
     property alias past: pastToggle.checked
     property alias future: futureToggle.checked
     property alias satellites: satelliteToggle.checked
+    property alias gnss: gnssToggle.checked
     property alias coverage: coverageToggle.checked
     property alias daynight: dayToggle.checked
     property alias cities: cityToggle.checked
@@ -86,7 +87,12 @@ Flow {
         }
         LayerToggle {
             id: satelliteToggle
-            text: "卫星"
+            text: "目标"
+            checked: true
+        }
+        LayerToggle {
+            id: gnssToggle
+            text: "GNSS"
             checked: true
         }
         LayerToggle {
