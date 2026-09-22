@@ -1,5 +1,17 @@
 # 第三方数据与软件
 
+## 星等资料
+
+McCants / QuickSat 星等表：Mike McCants，`qs.mag` 文件日期为 2020-09-14。
+
+来源：<https://www.mmccants.org/programs/qsmag.zip>。参考条件为 1000 km、满相时的最大亮度。
+
+中国空间站参考星等：Jay Respler，2022-08-03，三次观测的 QuickSat 本征星等平均值为 0.87 mag，对应当时构型。
+
+来源：<https://www.satobs.org/seesat/Aug-2022/0030.html>。
+
+原作者分发说明与数据归属见 `assets/photometry/NOTICE` 和 `assets/photometry/QUICKSAT.txt`；随程序提供的副本位于 `licenses/data/photometry/`。
+
 ## Natural Earth
 
 来源：<https://www.naturalearthdata.com/>

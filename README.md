@@ -19,7 +19,7 @@
 | 数据 | 来源 | 日期与版本 |
 | --- | --- | --- |
 | 轨道根数 | [CelesTrak](https://celestrak.org/NORAD/elements/) 或本地轨道文件 | 各卫星历元与本地获取时间见“资料”页 |
-| 参考星等 | 用户填写或导入的 QuickSat 星等表 | 来源、资料日期及导入或记录时间见“资料”页；日期缺省时显示“来源未注明” |
+| 参考星等 | 内置 McCants / QuickSat 星等表、SeeSat-L 中国空间站测光记录；支持手动参数和文件导入 | QuickSat 文件日期 2020-09-14；中国空间站报告日期 2022-08-03，适用于当时构型。当前采用的来源与日期见“资料”页 |
 | 观测天气 | [Open-Meteo](https://open-meteo.com/en/docs) | 预报时刻与获取时间随当前资料显示 |
 | 世界地图与城市 | [Natural Earth](https://www.naturalearthdata.com/)，1:5000 万 | 陆地 4.1.0、湖泊 5.0.0、国界 5.1.0、城市 5.1.2 |
 | 地形高程 | [Open-Meteo / Copernicus DEM](https://open-meteo.com/en/docs/elevation-api) | 2021 GLO-90，垂直基准 EGM2008 |
@@ -41,6 +41,8 @@
 | 中国空间站历史测光 | [SeeSat-L](https://www.satobs.org/seesat/Aug-2022/0030.html) | 报告日期 2022-08-03，对应当时的空间站构型 |
 
 公开资料的文件更新日期、观测截止日期和查询日期含义各异。卫星姿态、构型和服务状态随时间变化，光学观测还受大气与天气影响。
+
+内置参考星等随程序提供，按卫星编号与国际编号匹配后自动参与计算。视星等采用漫反射球模型，结合实际距离与相位角估算大气外亮度。手动参数及导入资料优先；“恢复默认”使用对应的内置参考值。
 
 参考项目：[ShenMian/tracker](https://github.com/ShenMian/tracker)。
 

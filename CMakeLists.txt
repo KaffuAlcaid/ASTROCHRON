@@ -74,6 +74,11 @@ qt_add_resources(astrochron geoid_data
     BASE assets/geoid
     FILES assets/geoid/egm2008-5.pgm
 )
+qt_add_resources(astrochron photometry_data
+    PREFIX /photometry
+    BASE assets/photometry
+    FILES assets/photometry/qs.mag
+)
 qt_add_resources(astrochron icons
     PREFIX /icons
     BASE assets/icons
@@ -95,5 +100,6 @@ install(TARGETS astrochron RUNTIME DESTINATION .)
 install(FILES LICENSE THIRD_PARTY_NOTICES.md DESTINATION .)
 install(FILES third_party/astronomy-engine/LICENSE DESTINATION licenses/astronomy-engine)
 install(FILES assets/icons/LICENSE DESTINATION licenses/lucide)
+install(FILES assets/photometry/NOTICE assets/photometry/QUICKSAT.txt DESTINATION licenses/data/photometry)
 install(FILES third_party/sgp4/LICENSE DESTINATION licenses/sgp4)
 install(FILES third_party/qt/LGPL-3.0-only.txt third_party/qt/GPL-3.0-only.txt third_party/qt/Qt-GPL-exception-1.0.txt DESTINATION licenses/qt)

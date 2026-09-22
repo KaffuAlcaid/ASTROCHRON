@@ -531,13 +531,21 @@ ColumnLayout {
                 }
                 FieldRow {
                     label: "来源"
-                    value: pane.satellites.photometry.source || "待填写参考星等"
+                    value: pane.satellites.photometry.source || "暂无参考星等"
+                    numeric: false
                 }
                 FieldRow {
                     label: "资料日期"
                     value: pane.satellites.photometry.sourceDate || "来源未注明"
                 }
                 FieldRow {
+                    visible: pane.satellites.photometry.builtin === true
+                    label: "采用资料"
+                    value: "内置参考值"
+                    numeric: false
+                }
+                FieldRow {
+                    visible: pane.satellites.photometry.builtin !== true
                     label: pane.satellites.photometry.manual ? "记录时间" : "导入时间"
                     value: pane.satellites.photometry.recordedAt || "尚无记录"
                 }

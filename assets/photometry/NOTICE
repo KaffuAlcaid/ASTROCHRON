@@ -1,0 +1,25 @@
+Satellite Photometry Sources
+
+Mike McCants / QuickSat
+----------------------
+Author: Mike McCants
+Data: qs.mag, from qsmag.zip (file date 2020-09-14)
+Source: https://www.mmccants.org/programs/qsmag.zip
+Original software documentation: QUICKSAT.txt, preserved with this data.
+Documentation source: https://mmccants.org/programs/quicksat.zip
+
+The author's original distribution statement reads:
+"This program is freeware. There are no restrictions on its distribution."
+
+QUICKSAT.txt describes the magnitude as the maximum apparent brightness at
+1000 km and full phase. The original source statements and attribution
+accompany these materials; ASTROCHRON's Apache-2.0 license covers its own code.
+
+Chinese Space Station Reference
+-------------------------------
+Observer: Jay Respler
+Report date: 2022-08-03
+Source: https://www.satobs.org/seesat/Aug-2022/0030.html
+Reference value: 0.87 mag, QuickSat intrinsic-magnitude convention,
+average of three observations. The report concerns the 2022 configuration;
+module and spacecraft changes can alter its brightness.

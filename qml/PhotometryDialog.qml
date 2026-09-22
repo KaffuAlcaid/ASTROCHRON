@@ -82,8 +82,8 @@ Dialog {
             }
             Item { Layout.fillWidth: true }
             Button {
-                text: "清除"
-                enabled: dialog.satellites.photometry.magnitude !== undefined
+                text: dialog.satellites.photometry.hasDefault ? "恢复默认" : "清除"
+                enabled: dialog.satellites.photometry.hasOverride === true
                 onClicked: if (dialog.satellites.clearPhotometry()) dialog.loadParameters()
             }
             Button {
@@ -116,7 +116,7 @@ Dialog {
             wrapMode: Text.Wrap
         }
         Label {
-            text: "QuickSat 星等表以 1000 km、满相时的最大亮度为参考；手动参数优先于导入记录。"
+            text: "QuickSat 星等表以 1000 km、满相时的最大亮度为参考。内置资料自动参与计算，手动参数和导入资料优先。"
             color: Theme.muted
             font.pixelSize: 12
             Layout.fillWidth: true

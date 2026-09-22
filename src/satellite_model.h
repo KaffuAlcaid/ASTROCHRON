@@ -126,7 +126,9 @@ signals:
 private:
     friend class CatalogModel;
     struct Source { QString group; QString url; qint64 snapshot = 0; qint64 acquired = 0; };
-    struct Photometry { double magnitude = 0; int phase = 90; QString source; bool manual = false; QString sourceDate; qint64 recordedAt = 0; };
+    struct Photometry { double magnitude = 0; int phase = 90; QString source; bool manual = false; QString sourceDate; qint64 recordedAt = 0; QString internationalId; };
+    static QHash<qint64, Photometry> readMagnitudes(QIODevice &input, const Photometry &metadata, int &skipped);
+    const Photometry *selectedPhotometry() const;
     void updateMagnitude();
     QString constellationKey(const Orbit::Satellite &satellite) const;
     bool usingLocalConstellation() const;
@@ -144,6 +146,7 @@ private:
     QThreadPool m_pool;
     QSettings m_settings;
     QHash<qint64, Photometry> m_photometry;
+    QHash<qint64, Photometry> m_defaultPhotometry;
     QString m_photometryStatus;
     QVector<Orbit::Satellite> m_satellites;
     QHash<qint64, int> m_index;

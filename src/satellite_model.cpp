@@ -64,6 +64,11 @@ SatelliteModel::SatelliteModel(QObject *parent) : QAbstractListModel(parent)
     connect(this, &SatelliteModel::selectionChanged, this, [this] {
         m_photometryStatus.clear(); emit photometryChanged();
     });
+    QFile magnitudes(":/photometry/qs.mag");
+    int skipped = 0;
+    if (magnitudes.open(QIODevice::ReadOnly))
+        m_defaultPhotometry = readMagnitudes(magnitudes, {0, 0, QStringLiteral("Mike McCants / QuickSat"), false, QStringLiteral("2020-09-14")}, skipped);
+    m_defaultPhotometry.insert(48274, {0.87, 0, QStringLiteral("SeeSat-L / Jay Respler（2022 年构型）"), false, QStringLiteral("2022-08-03"), 0, QStringLiteral("2021-035A")});
     m_pool.setMaxThreadCount(2);
     m_watchlist = m_settings.value("watchlist/ids", QStringList{"25544", "48274"}).toStringList();
     m_watchlist.removeDuplicates();
@@ -693,12 +698,28 @@ void SatelliteModel::requestFrame()
     });
 }
 
+const SatelliteModel::Photometry *SatelliteModel::selectedPhotometry() const
+{
+    const auto custom = m_photometry.constFind(m_selected);
+    if (custom != m_photometry.cend()) return &custom.value();
+    const auto base = m_defaultPhotometry.constFind(m_selected);
+    const auto *satellite = selected();
+    // Historical QuickSat provisional numbers can overlap later NORAD assignments.
+    if (base == m_defaultPhotometry.cend() || !satellite || base->internationalId.isEmpty()
+        || base->internationalId != satellite->internationalId) return nullptr;
+    return &base.value();
+}
+
 QVariantMap SatelliteModel::photometry() const
 {
-    if (!m_photometry.contains(m_selected)) return {};
-    const auto &entry = m_photometry[m_selected];
-    return {{"magnitude", entry.magnitude}, {"phase", entry.phase}, {"source", entry.source}, {"manual", entry.manual},
-        {"sourceDate", entry.sourceDate}, {"recordedAt", entry.recordedAt ? QDateTime::fromSecsSinceEpoch(entry.recordedAt, QTimeZone::UTC).toString("yyyy-MM-dd HH:mm:ss 'UTC'") : QString()}};
+    const auto *entry = selectedPhotometry();
+    if (!entry) return {};
+    const auto base = m_defaultPhotometry.constFind(m_selected);
+    const auto *satellite = selected();
+    const bool hasDefault = base != m_defaultPhotometry.cend() && satellite && !base->internationalId.isEmpty() && base->internationalId == satellite->internationalId;
+    return {{"magnitude", entry->magnitude}, {"phase", entry->phase}, {"source", entry->source}, {"manual", entry->manual},
+        {"builtin", !m_photometry.contains(m_selected)}, {"hasOverride", m_photometry.contains(m_selected)}, {"hasDefault", hasDefault},
+        {"sourceDate", entry->sourceDate}, {"recordedAt", entry->recordedAt ? QDateTime::fromSecsSinceEpoch(entry->recordedAt, QTimeZone::UTC).toString("yyyy-MM-dd HH:mm:ss 'UTC'") : QString()}};
 }
 
 bool SatelliteModel::setPhotometry(double magnitude, int phase, const QString &source, const QString &sourceDate)
@@ -734,9 +755,35 @@ bool SatelliteModel::clearPhotometry()
         emit photometryChanged(); return false;
     }
     m_photometry.remove(m_selected);
-    m_photometryStatus = QStringLiteral("星等参数已清除");
+    m_photometryStatus = selectedPhotometry() ? QStringLiteral("使用内置星等资料") : QStringLiteral("星等参数已清除");
     updateMagnitude(); emit frameChanged(); emit photometryChanged();
     return true;
+}
+
+QHash<qint64, SatelliteModel::Photometry> SatelliteModel::readMagnitudes(QIODevice &input, const Photometry &metadata, int &skipped)
+{
+    QHash<qint64, Photometry> entries;
+    static const QRegularExpression designation(QStringLiteral("^(\\d{2})\\s+(\\d{1,3})([A-Z]{1,3})$"));
+    while (!input.atEnd()) {
+        const auto line = QString::fromUtf8(input.readLine());
+        if (line.trimmed().isEmpty()) continue;
+        bool validId = false, validMagnitude = false;
+        const auto id = line.left(5).toLongLong(&validId);
+        const double magnitude = line.mid(33, 4).trimmed().toDouble(&validMagnitude);
+        // QuickSat columns 34-37: magnitude at 1000 km and full phase; 20 means unknown.
+        if (line.size() < 37 || !validId || id <= 0 || !validMagnitude || !std::isfinite(magnitude)
+            || magnitude == 20 || magnitude < -30 || magnitude > 30) { ++skipped; continue; }
+        auto entry = metadata;
+        entry.magnitude = magnitude;
+        const auto match = designation.match(line.mid(8, 8).trimmed());
+        if (match.hasMatch()) {
+            const int year = match.captured(1).toInt();
+            entry.internationalId = QStringLiteral("%1-%2%3").arg(year < 57 ? 2000 + year : 1900 + year)
+                .arg(match.captured(2).rightJustified(3, QLatin1Char('0')), match.captured(3));
+        }
+        entries.insert(id, entry);
+    }
+    return entries;
 }
 
 bool SatelliteModel::importMagnitudes(const QUrl &url, const QString &sourceDate)
@@ -748,20 +795,8 @@ bool SatelliteModel::importMagnitudes(const QUrl &url, const QString &sourceDate
     const auto recordedAt = QDateTime::currentSecsSinceEpoch();
     QFile file(url.toLocalFile());
     if (!file.open(QIODevice::ReadOnly)) return fail(QStringLiteral("星等表打开失败：") + file.errorString());
-    QHash<qint64, Photometry> entries;
     int skipped = 0, preserved = 0;
-    const auto source = QStringLiteral("QuickSat · ") + QFileInfo(file).fileName();
-    while (!file.atEnd()) {
-        const auto line = QString::fromUtf8(file.readLine());
-        if (line.trimmed().isEmpty()) continue;
-        bool validId = false, validMagnitude = false;
-        const auto id = line.left(5).toLongLong(&validId);
-        const double magnitude = line.mid(33, 4).trimmed().toDouble(&validMagnitude);
-        // QuickSat columns 34-37: magnitude at 1000 km and full phase; 20 means unknown.
-        if (line.size() < 37 || !validId || id <= 0 || !validMagnitude || !std::isfinite(magnitude)
-            || magnitude == 20 || magnitude < -30 || magnitude > 30) { ++skipped; continue; }
-        entries.insert(id, {magnitude, 0, source, false, date, recordedAt});
-    }
+    auto entries = readMagnitudes(file, {0, 0, QStringLiteral("QuickSat · ") + QFileInfo(file).fileName(), false, date, recordedAt}, skipped);
     if (entries.isEmpty()) return fail(QStringLiteral("文件中没有可用的 QuickSat 星等记录"));
     if (!m_database.transaction()) return fail(QStringLiteral("星等资料库写入失败：") + m_database.lastError().text());
     QSqlQuery query(m_database);
@@ -787,7 +822,8 @@ void SatelliteModel::updateMagnitude()
     m_observation.remove("magnitude");
     if (!m_observation.contains("range")) return;
     QString status;
-    if (!m_photometry.contains(m_selected)) status = QStringLiteral("待填写参考星等");
+    const auto *entry = selectedPhotometry();
+    if (!entry) status = QStringLiteral("暂无参考星等");
     else if (m_observation.value("elevation").toDouble() <= 0) status = QStringLiteral("地平线下");
     else if (m_observation.value("illumination").toInt() == 2) status = QStringLiteral("本影内");
     else if (m_observation.value("illumination").toInt() == 1) status = QStringLiteral("半影内");
@@ -796,8 +832,7 @@ void SatelliteModel::updateMagnitude()
         state.range = m_observation.value("range").toDouble();
         state.phaseAngle = m_observation.value("phaseAngle").toDouble();
         state.elevation = m_observation.value("elevation").toDouble();
-        const auto &entry = m_photometry[m_selected];
-        const auto magnitude = Orbit::apparentMagnitude(state, entry.magnitude, entry.phase);
+        const auto magnitude = Orbit::apparentMagnitude(state, entry->magnitude, entry->phase);
         if (magnitude) m_observation.insert("magnitude", *magnitude);
         else status = QStringLiteral("相位接近 180°");
     }
