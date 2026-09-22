@@ -263,6 +263,7 @@ ApplicationWindow {
         weather: weatherModel
         skyPass: window.skyPass
         onExportRequested: exportDialog.open()
+        onPhotometryRequested: photometryDialog.open()
     }
     footer: Timeline {
         clock: appState
@@ -291,6 +292,10 @@ ApplicationWindow {
         title: "导入轨道文件"
         nameFilters: ["轨道文件 (*.json *.tle *.txt)", "所有文件 (*)"]
         onAccepted: satelliteModel.importFile(selectedFile)
+    }
+    PhotometryDialog {
+        id: photometryDialog
+        satellites: satelliteModel
     }
     FileDialog {
         id: exportDialog

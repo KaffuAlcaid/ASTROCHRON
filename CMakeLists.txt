@@ -47,7 +47,7 @@ qt_add_qml_module(astrochron
         qml/SatelliteSidebar.qml qml/MapToolbar.qml qml/LayerMenu.qml
         qml/MapWorkspace.qml qml/PassTable.qml qml/ObservationPane.qml qml/Timeline.qml
         qml/ObserverDialog.qml qml/SettingsDialog.qml
-        qml/CatalogDialog.qml
+        qml/CatalogDialog.qml qml/PhotometryDialog.qml
     SOURCES
         src/app_state.h src/app_state.cpp
         src/map_data.h src/map_data.cpp
@@ -92,7 +92,7 @@ qt_add_shaders(astrochron daynight_shader
 )
 
 install(TARGETS astrochron RUNTIME DESTINATION .)
-install(FILES THIRD_PARTY_NOTICES.md DESTINATION .)
+install(FILES LICENSE THIRD_PARTY_NOTICES.md DESTINATION .)
 install(FILES third_party/astronomy-engine/LICENSE DESTINATION licenses/astronomy-engine)
 install(FILES assets/icons/LICENSE DESTINATION licenses/lucide)
 install(FILES third_party/sgp4/LICENSE DESTINATION licenses/sgp4)

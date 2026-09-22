@@ -37,6 +37,7 @@ struct State {
     double range = 0;
     double rangeRate = 0;
     double sunElevation = 0;
+    double phaseAngle = 0;
     int illumination = 0; // 0: sunlight, 1: penumbra, 2: umbra
 };
 
@@ -69,6 +70,7 @@ QVector<Satellite> parse(const QByteArray &data, QString &error, int &skipped);
 std::optional<State> propagate(const Satellite &satellite, double unixSeconds,
                                const Observer &observer, const Sun &sun);
 Track track(const Satellite &satellite, double start, double end, const Observer &observer);
+std::optional<double> apparentMagnitude(const State &state, double referenceMagnitude, double referencePhase);
 QString displayName(const Satellite &satellite);
 QString illuminationName(int illumination);
 QString directionName(double azimuth);

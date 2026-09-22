@@ -161,33 +161,39 @@ Rectangle {
             ItemDelegate {
                 required property var modelData
                 Layout.fillWidth: true
-                implicitHeight: 56
-                contentItem: RowLayout {
-                    ColumnLayout {
+                Layout.preferredHeight: 50
+                Layout.maximumHeight: 50
+                contentItem: ColumnLayout {
+                    spacing: 2
+                    RowLayout {
                         Layout.fillWidth: true
-                        spacing: 3
                         Label {
                             text: modelData.name
                             font.pixelSize: 13
-                        }
-                        Label {
-                            text: "目录 " + modelData.catalogCount + " · " + modelData.scope + " " + (modelData.loaded ? modelData.groupCount : "待获取")
                             Layout.fillWidth: true
-                            wrapMode: Text.Wrap
-                            font.pixelSize: 11
-                            color: Theme.muted
+                        }
+                        IconButton {
+                            implicitWidth: 24
+                            implicitHeight: 20
+                            icon.source: "qrc:/icons/crosshair.svg"
+                            tip: "预览 " + modelData.name
+                            enabled: modelData.catalogCount > 0
+                            onClicked: sidebar.satellites.previewConstellation(modelData.key)
+                        }
+                        IconButton {
+                            implicitWidth: 24
+                            implicitHeight: 20
+                            icon.source: "qrc:/icons/chevron-right.svg"
+                            tip: "查看成员"
+                            onClicked: sidebar.groupRequested(modelData.key)
                         }
                     }
-                    IconButton {
-                        icon.source: "qrc:/icons/crosshair.svg"
-                        tip: "预览 " + modelData.name
-                        enabled: modelData.catalogCount > 0
-                        onClicked: sidebar.satellites.previewConstellation(modelData.key)
-                    }
-                    IconButton {
-                        icon.source: "qrc:/icons/chevron-right.svg"
-                        tip: "查看成员"
-                        onClicked: sidebar.groupRequested(modelData.key)
+                    Label {
+                        text: "目录 " + modelData.catalogCount + " · " + modelData.scope + " " + (modelData.loaded ? modelData.groupCount : "待获取")
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        font.pixelSize: 11
+                        color: Theme.muted
                     }
                 }
                 ToolTip.visible: hovered

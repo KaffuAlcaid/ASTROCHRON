@@ -12,6 +12,7 @@ ColumnLayout {
     property var obs: satellites.observation
     property var forecast: weather.forecast
     signal exportRequested
+    signal photometryRequested
     spacing: 0
     function value(key, digits, suffix) {
         return obs[key] === undefined ? "待计算" : Number(obs[key]).toFixed(digits) + (suffix || "");
@@ -214,13 +215,29 @@ ColumnLayout {
                         numeric: false
                     }
                     Metric {
-                        label: "预计视星等 / mag"
-                        value: "暂无数据"
-                        numeric: false
+                        label: "视星等（估算）"
+                        value: pane.obs.magnitude === undefined ? (pane.obs.magnitudeStatus || "待计算") : pane.value("magnitude", 1, " mag")
+                        numeric: pane.obs.magnitude !== undefined
                     }
                     Metric {
                         label: "云量（预报）"
                         value: pane.weatherValue("cloud_cover", "%")
+                    }
+                }
+                RowLayout {
+                    Label {
+                        text: "大气外 · 漫反射球模型"
+                        font.pixelSize: 11
+                        color: Theme.muted
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                    }
+                    Button {
+                        text: "星等参数"
+                        icon.source: "qrc:/icons/settings-2.svg"
+                        icon.color: Theme.text
+                        enabled: pane.satellites.selectedId !== "0"
+                        onClicked: pane.photometryRequested()
                     }
                 }
                 SectionTitle {

@@ -105,7 +105,7 @@ void CatalogModel::rebuild()
         QHash<QString, QVector<int>> groups;
         for (const int index : m_source->m_targets) {
             const auto &satellite = m_source->m_satellites[index];
-            const auto key = constellation(satellite);
+            const auto key = m_source->constellationKey(satellite);
             ++m_counts[key];
             if (m_source->m_group != "catalog") {
                 bool inSource = false;

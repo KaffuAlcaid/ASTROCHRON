@@ -14,3 +14,5 @@
 轨道数据来自 [CelesTrak](https://celestrak.org/NORAD/elements/)，地图数据来自 [Natural Earth](https://www.naturalearthdata.com/)。
 
 参考项目：[ShenMian/tracker](https://github.com/ShenMian/tracker)。
+
+本项目源码采用 [Apache-2.0 许可](LICENSE)。第三方软件与数据的许可见 [第三方声明](THIRD_PARTY_NOTICES.md)。

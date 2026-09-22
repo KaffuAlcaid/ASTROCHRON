@@ -45,6 +45,8 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(int previewTotal READ previewTotal NOTIFY previewChanged)
     Q_PROPERTY(bool previewBusy READ previewBusy NOTIFY previewChanged)
     Q_PROPERTY(double receiveFrequency READ receiveFrequency WRITE setReceiveFrequency NOTIFY receiveFrequencyChanged)
+    Q_PROPERTY(QVariantMap photometry READ photometry NOTIFY photometryChanged)
+    Q_PROPERTY(QString photometryStatus READ photometryStatus NOTIFY photometryChanged)
 
 public:
     explicit SatelliteModel(QObject *parent = nullptr);
@@ -94,6 +96,11 @@ public:
     Q_INVOKABLE void closePreview();
     double receiveFrequency() const { return m_frequency; }
     void setReceiveFrequency(double value);
+    QVariantMap photometry() const;
+    QString photometryStatus() const { return m_photometryStatus; }
+    Q_INVOKABLE bool setPhotometry(double magnitude, int phase, const QString &source);
+    Q_INVOKABLE bool clearPhotometry();
+    Q_INVOKABLE void importMagnitudes(const QUrl &url);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void importFile(const QUrl &url);
     Q_INVOKABLE void exportSelected(const QUrl &url);
@@ -112,10 +119,14 @@ signals:
     void previewChanged();
     void sourceChanged();
     void gnssChanged();
+    void photometryChanged();
 
 private:
     friend class CatalogModel;
     struct Source { QString group; QString url; qint64 snapshot = 0; qint64 acquired = 0; };
+    struct Photometry { double magnitude = 0; int phase = 90; QString source; bool manual = false; };
+    void updateMagnitude();
+    QString constellationKey(const Orbit::Satellite &satellite) const;
     void filter();
     void requestFrame();
     void invalidate();
@@ -129,6 +140,8 @@ private:
     QSqlDatabase m_database;
     QThreadPool m_pool;
     QSettings m_settings;
+    QHash<qint64, Photometry> m_photometry;
+    QString m_photometryStatus;
     QVector<Orbit::Satellite> m_satellites;
     QHash<qint64, int> m_index;
     QHash<qint64, Source> m_sources;
