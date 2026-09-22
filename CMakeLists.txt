@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Quick QuickControls2 ShaderTools)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Quick QuickControls2 ShaderTools Network Sql)
 find_program(NODE_EXECUTABLE node REQUIRED)
 qt_standard_project_setup(REQUIRES 6.11)
 
@@ -30,6 +30,12 @@ if(MSVC)
 endif()
 
 qt_add_executable(astrochron WIN32 src/main.cpp)
+add_library(sgp4 STATIC third_party/sgp4/SGP4.cpp)
+target_include_directories(sgp4 PUBLIC third_party/sgp4)
+if(MSVC)
+    target_compile_definitions(sgp4 PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_options(sgp4 PRIVATE /utf-8)
+endif()
 set_target_properties(astrochron PROPERTIES OUTPUT_NAME ASTROCHRON)
 qt_add_qml_module(astrochron
     URI Astrochron
@@ -39,9 +45,10 @@ qt_add_qml_module(astrochron
         src/app_state.h src/app_state.cpp
         src/map_data.h src/map_data.cpp
         src/world_map.h src/world_map.cpp
+        src/orbit_engine.h src/orbit_engine.cpp
 )
 target_include_directories(astrochron PRIVATE src)
-target_link_libraries(astrochron PRIVATE Qt6::Quick Qt6::QuickControls2 astronomy_engine)
+target_link_libraries(astrochron PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Sql astronomy_engine sgp4)
 if(MSVC)
     target_compile_options(astrochron PRIVATE /utf-8 /W4)
 endif()
@@ -68,3 +75,4 @@ install(TARGETS astrochron RUNTIME DESTINATION .)
 install(FILES THIRD_PARTY_NOTICES.md DESTINATION .)
 install(FILES third_party/astronomy-engine/LICENSE DESTINATION licenses/astronomy-engine)
 install(FILES assets/icons/LICENSE DESTINATION licenses/lucide)
+install(FILES third_party/sgp4/LICENSE DESTINATION licenses/sgp4)

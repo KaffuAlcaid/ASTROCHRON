@@ -22,6 +22,14 @@ Natural Earth 矢量与栅格地图数据属于公有领域。原始压缩包中
 
 完整许可见 `assets/icons/LICENSE`。
 
+## SGP4
+
+来源：<https://github.com/brandon-rhodes/python-sgp4>，其中的 Vallado C++ 实现。
+
+版本：`bf25b00ccf8cf0770a8e5ba458134156f1c70812`。许可：MIT。
+
+完整许可见 `third_party/sgp4/LICENSE`。
+
 ## Qt
 
 来源：<https://www.qt.io/>。Qt 6.11 运行库采用动态链接，按 LGPL-3.0 许可使用。
