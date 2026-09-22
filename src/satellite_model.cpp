@@ -25,7 +25,7 @@ QVariantMap stateMap(const Orbit::State &state)
 {
     return {{"time", state.time}, {"latitude", state.latitude}, {"longitude", state.longitude},
         {"altitude", state.altitude}, {"azimuth", state.azimuth}, {"elevation", state.elevation},
-        {"range", state.range}, {"speed", state.speed}, {"rangeRate", state.rangeRate},
+        {"range", state.range}, {"speed", state.speed}, {"rangeRate", state.rangeRate}, {"elevationRate", state.elevationRate},
         {"sunElevation", state.sunElevation}, {"illumination", state.illumination}};
 }
 
@@ -102,10 +102,11 @@ QVariantList SatelliteModel::groups() const
 {
     QVariantList result;
     const std::pair<const char *, const char *> groups[] = {
-        {"stations", "空间站"}, {"visual", "明亮目标"}, {"active", "在轨活动卫星"},
+        {"active", "全部活动卫星"}, {"stations", "空间站"}, {"visual", "明亮目标"},
         {"weather", "气象卫星"}, {"noaa", "美国气象卫星"}, {"goes", "地球静止气象卫星"},
         {"resource", "地球资源卫星"}, {"sarsat", "搜救卫星"}, {"dmc", "灾害监测卫星"},
         {"starlink", "星链"}, {"oneweb", "一网"}, {"iridium-NEXT", "铱星二代"},
+        {"qianfan", "千帆"}, {"hulianwang", "互联网低轨"}, {"kuiper", "柯伊伯"}, {"sar", "合成孔径雷达"},
         {"intelsat", "国际通信卫星"}, {"geo", "地球同步卫星"}, {"amateur", "业余无线电卫星"},
         {"gnss", "全球导航卫星"}, {"gps-ops", "全球定位系统"}, {"glo-ops", "格洛纳斯"},
         {"galileo", "伽利略"}, {"beidou", "北斗"}, {"science", "科学卫星"},
@@ -130,7 +131,7 @@ void SatelliteModel::setClock(AppState *clock)
             requestFrame();
         });
         connect(clock, &AppState::observerChanged, this, &SatelliteModel::invalidate);
-        QTimer::singleShot(0, this, [this] { setGroup(m_settings.value("catalog/group", "stations").toString()); });
+        QTimer::singleShot(0, this, [this] { setGroup(m_settings.value("catalog/group", "active").toString()); });
     }
     emit clockChanged();
 }
@@ -408,8 +409,8 @@ void SatelliteModel::requestFrame()
                         {"startAz", Orbit::directionName(pass.rise.azimuth) + " " + number(pass.rise.azimuth, 1) + QStringLiteral("°")},
                         {"endAz", Orbit::directionName(pass.set.azimuth) + " " + number(pass.set.azimuth, 1) + QStringLiteral("°")},
                         {"maximum", number(pass.peak.elevation, 1) + QStringLiteral("°")},
-                        {"duration", number((pass.set.time - pass.rise.time) / 60, 1) + QStringLiteral(" 分")},
-                        {"range", number(pass.peak.range, 0) + QStringLiteral(" 千米")},
+                        {"duration", number((pass.set.time - pass.rise.time) / 60, 1) + QStringLiteral(" min")},
+                        {"range", number(pass.peak.range, 0) + QStringLiteral(" km")}, {"hasOptical", !visible.isEmpty()},
                         {"optical", visible.isEmpty() ? QStringLiteral("光照条件欠佳") : visible.join(" / ")}});
                 }
             }
@@ -459,13 +460,13 @@ QVariantList SatelliteModel::orbitFields() const
     add(QStringLiteral("偏心率"), field("ECCENTRICITY", 7));
     add(QStringLiteral("近地点幅角"), field("ARG_OF_PERICENTER", 4, QStringLiteral("°")));
     add(QStringLiteral("平近点角"), field("MEAN_ANOMALY", 4, QStringLiteral("°")));
-    add(QStringLiteral("每日绕地圈数"), field("MEAN_MOTION", 8, QStringLiteral(" 圈/日")));
-    add(QStringLiteral("轨道周期"), number(1440.0 / e.value("MEAN_MOTION").toDouble(), 3) + QStringLiteral(" 分"));
-    add(QStringLiteral("阻力项"), scientific("BSTAR") + QStringLiteral(" /地球半径"));
+    add(QStringLiteral("每日绕地圈数"), field("MEAN_MOTION", 8, QStringLiteral(" rev/d")));
+    add(QStringLiteral("轨道周期"), number(1440.0 / e.value("MEAN_MOTION").toDouble(), 3) + QStringLiteral(" min"));
+    add(QStringLiteral("阻力项"), scientific("BSTAR") + QStringLiteral(" R_E^-1"));
     add(QStringLiteral("历元圈数"), field("REV_AT_EPOCH", 0));
     add(QStringLiteral("根数集编号"), field("ELEMENT_SET_NO", 0));
-    add(QStringLiteral("平均运动一阶项"), scientific("MEAN_MOTION_DOT") + QStringLiteral(" 圈/日²"));
-    add(QStringLiteral("平均运动二阶项"), scientific("MEAN_MOTION_DDOT") + QStringLiteral(" 圈/日³"));
+    add(QStringLiteral("平均运动一阶项"), scientific("MEAN_MOTION_DOT") + QStringLiteral(" rev/d²"));
+    add(QStringLiteral("平均运动二阶项"), scientific("MEAN_MOTION_DDOT") + QStringLiteral(" rev/d³"));
     return result;
 }
 void SatelliteModel::copyDetails()

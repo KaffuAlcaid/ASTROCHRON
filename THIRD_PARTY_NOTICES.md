@@ -32,6 +32,8 @@ Natural Earth 矢量与栅格地图数据属于公有领域。原始压缩包中
 
 ## 高程与大地水准面
 
+观测天气由 Open-Meteo Weather Forecast API 提供，来源与署名：<https://open-meteo.com/en/docs>，数据按 CC BY 4.0 使用。
+
 地形高程由 Open-Meteo Elevation API 提供，采用 Copernicus DEM 2021 GLO-90，垂直基准为 EGM2008。
 
 来源与署名：<https://open-meteo.com/en/docs/elevation-api>，<https://doi.org/10.5270/ESA-c5d3d65>。数据按 CC BY 4.0 使用，Copernicus DEM 为 European Union 与 European Space Agency 提供的数据。

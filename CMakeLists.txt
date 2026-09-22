@@ -47,6 +47,7 @@ qt_add_qml_module(astrochron
         src/world_map.h src/world_map.cpp
         src/orbit_engine.h src/orbit_engine.cpp
         src/satellite_model.h src/satellite_model.cpp
+        src/weather_model.h src/weather_model.cpp
         src/orbit_layer.h src/orbit_layer.cpp
 )
 target_include_directories(astrochron PRIVATE src)

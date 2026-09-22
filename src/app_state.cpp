@@ -16,7 +16,7 @@
 #include <numbers>
 #include <limits>
 
-AppState::AppState(QObject *parent) : QObject(parent), m_reference(QDateTime::currentDateTimeUtc())
+AppState::AppState(QObject *parent) : QObject(parent), m_reference(QDateTime::currentDateTimeUtc()), m_now(m_reference)
 {
     m_observerName = m_settings.value("observer/name", QStringLiteral("台北")).toString();
     m_latitude = m_settings.value("observer/latitude", 25.0330).toDouble();
@@ -27,15 +27,19 @@ AppState::AppState(QObject *parent) : QObject(parent), m_reference(QDateTime::cu
     m_elevationStatus = m_settings.value("observer/heightSource", hasObserverHeight() ? QStringLiteral("手动填写") : QStringLiteral("海拔待查询")).toString();
     m_timeZone = QTimeZone(m_settings.value("observer/timeZone", QStringLiteral("Asia/Taipei")).toByteArray());
     m_dark = m_settings.value("appearance/dark", QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark).toBool();
+    m_updateFrequency = qBound(1, m_settings.value("display/updateFrequency", 1).toInt(), 60);
     updateSun();
     connect(&m_timer, &QTimer::timeout, this, [this] {
+        const auto now = QDateTime::currentDateTimeUtc();
+        if (now.toSecsSinceEpoch() != m_now.toSecsSinceEpoch()) { m_now = now; emit nowChanged(); }
         if (m_live) {
-            m_reference = QDateTime::currentDateTimeUtc();
+            m_reference = now;
             updateSun();
             emit timeChanged();
         }
     });
-    m_timer.start(1000);
+    m_timer.setTimerType(Qt::PreciseTimer);
+    m_timer.start(qRound(1000.0 / m_updateFrequency));
     if (!hasObserverHeight() && m_automaticElevation) QTimer::singleShot(0, this, &AppState::lookupElevation);
 }
 
@@ -179,6 +183,10 @@ QDateTime AppState::selectedTime() const { return m_reference.addMSecs((m_offset
 QString AppState::timeText() const { return selectedTime().toTimeZone(m_timeZone).toString("yyyy-MM-dd HH:mm:ss"); }
 QString AppState::startTimeText() const { return m_reference.addSecs(-43200).toTimeZone(m_timeZone).toString("MM-dd HH:mm"); }
 QString AppState::endTimeText() const { return m_reference.addSecs(43200).toTimeZone(m_timeZone).toString("MM-dd HH:mm"); }
+QString AppState::formatTime(double seconds, const QString &format) const
+{
+    return QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(seconds * 1000), m_timeZone).toString(format);
+}
 bool AppState::hasObserverHeight() const { return std::isfinite(m_height); }
 QString AppState::timeZoneName() const { return m_timeZone.displayName(selectedTime(), QTimeZone::LongName, QLocale(QLocale::Chinese)); }
 QStringList AppState::timeZones() const
@@ -192,9 +200,9 @@ QString AppState::offsetText() const
     if (m_live) return QStringLiteral("当前时刻");
     const int seconds = m_offset * 60 + m_secondOffset;
     if (seconds == 0) return QStringLiteral("暂停");
-    return QStringLiteral("%1 %2 小时 %3 分%4").arg(seconds < 0 ? QStringLiteral("过去") : QStringLiteral("未来"))
+    return QStringLiteral("%1 %2 h %3 min%4").arg(seconds < 0 ? QStringLiteral("过去") : QStringLiteral("未来"))
         .arg(std::abs(seconds) / 3600).arg(std::abs(seconds) / 60 % 60)
-        .arg(m_secondOffset ? QStringLiteral(" %1 秒").arg(std::abs(m_secondOffset)) : QString());
+        .arg(m_secondOffset ? QStringLiteral(" %1 s").arg(std::abs(m_secondOffset)) : QString());
 }
 
 void AppState::setMinuteOffset(int minutes)
@@ -240,6 +248,16 @@ void AppState::setDarkTheme(bool dark)
     m_dark = dark;
     m_settings.setValue("appearance/dark", dark);
     emit themeChanged();
+}
+
+void AppState::setUpdateFrequency(int frequency)
+{
+    frequency = qBound(1, frequency, 60);
+    if (m_updateFrequency == frequency) return;
+    m_updateFrequency = frequency;
+    m_timer.setInterval(qRound(1000.0 / frequency));
+    m_settings.setValue("display/updateFrequency", frequency);
+    emit updateFrequencyChanged();
 }
 
 bool AppState::setObserver(const QString &name, double latitude, double longitude, double height, const QString &timeZone)

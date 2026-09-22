@@ -29,8 +29,10 @@ class AppState : public QObject {
     Q_PROPERTY(QString timeZoneName READ timeZoneName NOTIFY timeChanged)
     Q_PROPERTY(QStringList timeZones READ timeZones CONSTANT)
     Q_PROPERTY(bool darkTheme READ darkTheme WRITE setDarkTheme NOTIFY themeChanged)
+    Q_PROPERTY(int updateFrequency READ updateFrequency WRITE setUpdateFrequency NOTIFY updateFrequencyChanged)
     Q_PROPERTY(double unixTime READ unixTime NOTIFY timeChanged)
     Q_PROPERTY(double referenceTime READ referenceTime NOTIFY timeChanged)
+    Q_PROPERTY(double nowTime READ nowTime NOTIFY nowChanged)
     Q_PROPERTY(double ellipsoidHeight READ ellipsoidHeight NOTIFY observerChanged)
     Q_PROPERTY(QString elevationStatus READ elevationStatus NOTIFY elevationChanged)
     Q_PROPERTY(bool elevationBusy READ elevationBusy NOTIFY elevationChanged)
@@ -56,8 +58,12 @@ public:
     QString timeZoneName() const;
     QStringList timeZones() const;
     bool darkTheme() const { return m_dark; }
+    int updateFrequency() const { return m_updateFrequency; }
+    void setUpdateFrequency(int frequency);
     double unixTime() const { return selectedTime().toMSecsSinceEpoch() / 1000.0; }
     double referenceTime() const { return m_reference.toMSecsSinceEpoch() / 1000.0; }
+    double nowTime() const { return m_now.toMSecsSinceEpoch() / 1000.0; }
+    Q_INVOKABLE QString formatTime(double unixSeconds, const QString &format = QStringLiteral("HH:mm:ss")) const;
     double ellipsoidHeight() const;
     QString elevationStatus() const { return m_elevationStatus; }
     bool elevationBusy() const { return m_elevationBusy; }
@@ -82,12 +88,15 @@ signals:
     void observerChanged();
     void themeChanged();
     void elevationChanged();
+    void updateFrequencyChanged();
+    void nowChanged();
 
 private:
     void updateSun();
     QDateTime selectedTime() const;
     QSettings m_settings;
     QDateTime m_reference;
+    QDateTime m_now;
     QTimer m_timer;
     QTimeZone m_timeZone;
     QVector3D m_sun;
@@ -100,6 +109,7 @@ private:
     int m_millisecondOffset = 0;
     bool m_live = true;
     bool m_dark;
+    int m_updateFrequency = 1;
     QNetworkAccessManager m_network;
     QString m_elevationStatus;
     bool m_elevationBusy = false;

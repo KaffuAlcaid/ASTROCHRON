@@ -97,7 +97,7 @@ private:
     QHash<qint64, QVector<int>> m_members;
     QVector<int> m_rows;
     QHash<qint64, double> m_elevations;
-    QString m_search, m_group = QStringLiteral("stations"), m_source, m_status;
+    QString m_search, m_group = QStringLiteral("active"), m_source, m_status;
     qint64 m_selected = 0, m_snapshot = 0;
     quint64 m_revision = 0;
     double m_trackReference = 0;

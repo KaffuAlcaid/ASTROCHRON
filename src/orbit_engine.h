@@ -33,6 +33,7 @@ struct State {
     double speed = 0;
     double azimuth = 0;
     double elevation = 0;
+    double elevationRate = 0;
     double range = 0;
     double rangeRate = 0;
     double sunElevation = 0;

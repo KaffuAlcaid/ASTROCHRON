@@ -248,6 +248,11 @@ std::optional<State> propagate(const Satellite &satellite, double seconds, const
     const auto look = lookAngles(delta, observer);
     state.azimuth = look[0]; state.elevation = look[1]; state.range = norm(delta);
     state.rangeRate = dot(delta, velocity) / state.range;
+    const double lat = observer.latitude * rad, lon = observer.longitude * rad;
+    const double upSpeed = velocity[0] * std::cos(lat) * std::cos(lon) + velocity[1] * std::cos(lat) * std::sin(lon) + velocity[2] * std::sin(lat);
+    const double cosineElevation = std::cos(state.elevation * rad);
+    if (std::abs(cosineElevation) > 1e-8)
+        state.elevationRate = (upSpeed - state.rangeRate * std::sin(state.elevation * rad)) / (state.range * cosineElevation) * deg;
     state.sunElevation = lookAngles(subtract(sun.position, station), observer)[1];
     const auto satelliteToSun = subtract(sun.position, state.earthPosition);
     const double r = norm(state.earthPosition), d = norm(satelliteToSun);
