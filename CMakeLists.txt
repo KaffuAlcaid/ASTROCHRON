@@ -46,6 +46,7 @@ qt_add_qml_module(astrochron
         src/map_data.h src/map_data.cpp
         src/world_map.h src/world_map.cpp
         src/orbit_engine.h src/orbit_engine.cpp
+        src/satellite_model.h src/satellite_model.cpp
 )
 target_include_directories(astrochron PRIVATE src)
 target_link_libraries(astrochron PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Sql astronomy_engine sgp4)
@@ -57,6 +58,11 @@ qt_add_resources(astrochron world_map_data
     PREFIX /maps
     BASE "${CMAKE_CURRENT_BINARY_DIR}/generated"
     FILES "${map_resource}"
+)
+qt_add_resources(astrochron geoid_data
+    PREFIX /geoid
+    BASE assets/geoid
+    FILES assets/geoid/egm2008-5.pgm
 )
 qt_add_resources(astrochron icons
     PREFIX /icons

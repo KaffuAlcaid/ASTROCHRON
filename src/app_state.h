@@ -2,6 +2,7 @@
 
 #include <QDateTime>
 #include <QObject>
+#include <QNetworkAccessManager>
 #include <QSettings>
 #include <QTimer>
 #include <QTimeZone>
@@ -28,6 +29,14 @@ class AppState : public QObject {
     Q_PROPERTY(QString timeZoneName READ timeZoneName NOTIFY timeChanged)
     Q_PROPERTY(QStringList timeZones READ timeZones CONSTANT)
     Q_PROPERTY(bool darkTheme READ darkTheme WRITE setDarkTheme NOTIFY themeChanged)
+    Q_PROPERTY(double unixTime READ unixTime NOTIFY timeChanged)
+    Q_PROPERTY(double referenceTime READ referenceTime NOTIFY timeChanged)
+    Q_PROPERTY(double ellipsoidHeight READ ellipsoidHeight NOTIFY observerChanged)
+    Q_PROPERTY(QString elevationStatus READ elevationStatus NOTIFY elevationChanged)
+    Q_PROPERTY(bool elevationBusy READ elevationBusy NOTIFY elevationChanged)
+    Q_PROPERTY(bool automaticElevation READ automaticElevation WRITE setAutomaticElevation NOTIFY elevationChanged)
+    Q_PROPERTY(double minimumElevation READ minimumElevation WRITE setMinimumElevation NOTIFY observerChanged)
+    Q_PROPERTY(QVariantList savedObservers READ savedObservers NOTIFY observerChanged)
 
 public:
     explicit AppState(QObject *parent = nullptr);
@@ -47,6 +56,21 @@ public:
     QString timeZoneName() const;
     QStringList timeZones() const;
     bool darkTheme() const { return m_dark; }
+    double unixTime() const { return selectedTime().toMSecsSinceEpoch() / 1000.0; }
+    double referenceTime() const { return m_reference.toMSecsSinceEpoch() / 1000.0; }
+    double ellipsoidHeight() const;
+    QString elevationStatus() const { return m_elevationStatus; }
+    bool elevationBusy() const { return m_elevationBusy; }
+    bool automaticElevation() const { return m_automaticElevation; }
+    double minimumElevation() const { return m_minimumElevation; }
+    QVariantList savedObservers() const;
+    void setAutomaticElevation(bool enabled);
+    void setMinimumElevation(double value);
+    Q_INVOKABLE void lookupElevation();
+    Q_INVOKABLE void saveObserver();
+    Q_INVOKABLE void loadObserver(int index);
+    Q_INVOKABLE void removeObserver(int index);
+    Q_INVOKABLE void seek(double unixSeconds);
     void setMinuteOffset(int minutes);
     void setDarkTheme(bool dark);
     Q_INVOKABLE void resumeLive();
@@ -57,6 +81,7 @@ signals:
     void timeChanged();
     void observerChanged();
     void themeChanged();
+    void elevationChanged();
 
 private:
     void updateSun();
@@ -73,4 +98,10 @@ private:
     int m_offset = 0;
     bool m_live = true;
     bool m_dark;
+    QNetworkAccessManager m_network;
+    QString m_elevationStatus;
+    bool m_elevationBusy = false;
+    bool m_automaticElevation = true;
+    double m_minimumElevation = 10;
+    quint64 m_elevationRequest = 0;
 };

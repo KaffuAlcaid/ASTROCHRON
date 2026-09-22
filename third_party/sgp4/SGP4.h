@@ -103,17 +103,17 @@ typedef struct elsetrec
   // sgp4fix add constant parameters to eliminate mutliple calls during execution
   double tumin, mus, radiusearthkm, xke, j2, j3, j4, j3oj2;
 
-  //       Additional elements to capture relevant TLE and object information:       
+  //       Additional elements to capture relevant TLE and object information:
   long dia_mm; // RSO dia in mm
   double period_sec; // Period in seconds
-  unsigned char active; // "Active S/C" flag (0=n, 1=y) 
-  unsigned char not_orbital; // "Orbiting S/C" flag (0=n, 1=y)  
-  double rcs_m2; // "RCS (m^2)" storage  
+  unsigned char active; // "Active S/C" flag (0=n, 1=y)
+  unsigned char not_orbital; // "Orbiting S/C" flag (0=n, 1=y)
+  double rcs_m2; // "RCS (m^2)" storage
 
 } elsetrec;
 
 
-namespace SGP4Funcs 
+namespace SGP4Funcs
 {
 
 	//	public class SGP4Class

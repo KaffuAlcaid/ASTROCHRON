@@ -30,6 +30,16 @@ Natural Earth 矢量与栅格地图数据属于公有领域。原始压缩包中
 
 完整许可见 `third_party/sgp4/LICENSE`。
 
+## 高程与大地水准面
+
+地形高程由 Open-Meteo Elevation API 提供，采用 Copernicus DEM 2021 GLO-90，垂直基准为 EGM2008。
+
+来源与署名：<https://open-meteo.com/en/docs/elevation-api>，<https://doi.org/10.5270/ESA-c5d3d65>。数据按 CC BY 4.0 使用，Copernicus DEM 为 European Union 与 European Space Agency 提供的数据。
+
+大地水准面格网：GeographicLib 分发的 NGA EGM2008，5 分角分辨率，采用双线性插值。
+
+数据与使用条款：<https://geographiclib.sourceforge.io/C++/doc/geoid.html>。EGM2008 格网属于公有领域。
+
 ## Qt
 
 来源：<https://www.qt.io/>。Qt 6.11 运行库采用动态链接，按 LGPL-3.0 许可使用。

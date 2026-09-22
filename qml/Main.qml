@@ -97,7 +97,7 @@ ApplicationWindow {
                     text: (appState.observerLongitude >= 0 ? "东经 " : "西经 ") + Math.abs(appState.observerLongitude).toFixed(4) + "°"
                     font.pixelSize: 12
                 }
-                Label { text: appState.hasObserverHeight ? "海拔 " + appState.observerHeight.toFixed(0) + " 米" : "海拔待填写"; font.pixelSize: 12 }
+                Label { text: appState.hasObserverHeight ? "海拔 " + appState.observerHeight.toFixed(0) + " 米" : appState.elevationBusy ? "正在查询海拔" : "海拔待填写"; font.pixelSize: 12 }
                 Item { Layout.fillWidth: true }
                 IconButton { icon.source: "qrc:/icons/settings-2.svg"; tip: "观测地点设置"; onClicked: observerDialog.open() }
             }
@@ -343,13 +343,14 @@ ApplicationWindow {
         title: "观测地点"
         modal: true
         anchors.centerIn: Overlay.overlay
-        width: 390
+        width: 430
         onOpened: {
             nameField.text = appState.observerName
             latitudeField.text = appState.observerLatitude.toFixed(6)
             longitudeField.text = appState.observerLongitude.toFixed(6)
             heightField.text = appState.hasObserverHeight ? appState.observerHeight.toFixed(0) : ""
             timeZoneField.editText = appState.timeZone
+            minimumField.value = appState.minimumElevation
             inputError.visible = false
         }
         contentItem: ColumnLayout {
@@ -360,8 +361,17 @@ ApplicationWindow {
             TextField { id: latitudeField; Layout.fillWidth: true; selectByMouse: true; validator: DoubleValidator { bottom: -90; top: 90; decimals: 6; locale: "C" } }
             Label { text: "经度（东经为正）" }
             TextField { id: longitudeField; Layout.fillWidth: true; selectByMouse: true; validator: DoubleValidator { bottom: -180; top: 180; decimals: 6; locale: "C" } }
-            Label { text: "海拔（米）" }
+            Label { text: "海拔（米，EGM2008）" }
             TextField { id: heightField; Layout.fillWidth: true; selectByMouse: true; validator: DoubleValidator { bottom: -12000; top: 100000; decimals: 1; locale: "C" } }
+            Label { text: appState.elevationStatus; color: window.mutedColor; Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 11 }
+            Label { text: appState.hasObserverHeight ? "椭球高 " + appState.ellipsoidHeight.toFixed(1) + " 米" : "海拔待填写，观测计算暂按海拔 0 米估算"; color: window.mutedColor; Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 11 }
+            CheckBox { text: "选点后自动查询地形海拔"; checked: appState.automaticElevation; onToggled: appState.automaticElevation = checked }
+            Label {
+                text: "地形海拔：<a href='https://open-meteo.com/en/docs/elevation-api'>Open-Meteo</a> · Copernicus DEM"
+                font.pixelSize: 11; color: window.mutedColor; onLinkActivated: link => Qt.openUrlExternally(link)
+            }
+            Label { text: "最低高度角" }
+            SpinBox { id: minimumField; from: 0; to: 89; editable: true }
             Label { text: "时区" }
             ComboBox { id: timeZoneField; Layout.fillWidth: true; editable: true; model: appState.timeZones }
             Label { id: inputError; text: "请输入有效的地点名称、坐标和时区。"; color: "#b85142"; visible: false; Layout.fillWidth: true; wrapMode: Text.Wrap }
@@ -375,6 +385,7 @@ ApplicationWindow {
                         if (latitudeField.acceptableInput && longitudeField.acceptableInput && (heightField.text.length === 0 || heightField.acceptableInput) &&
                             appState.setObserver(nameField.text, Number(latitudeField.text), Number(longitudeField.text), heightField.text.length === 0 ? NaN : Number(heightField.text), timeZoneField.editText)) {
                             worldMap.centerOn(appState.observerLongitude, appState.observerLatitude)
+                            appState.minimumElevation = minimumField.value
                             observerDialog.close()
                         } else inputError.visible = true
                     }
