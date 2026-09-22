@@ -18,6 +18,7 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(QString selectedId READ selectedId WRITE select NOTIFY selectionChanged)
     Q_PROPERTY(QVariantMap observation READ observation NOTIFY frameChanged)
     Q_PROPERTY(QVariantList orbitFields READ orbitFields NOTIFY selectionChanged)
+    Q_PROPERTY(QVariantList relatedObjects READ relatedObjects NOTIFY selectionChanged)
     Q_PROPERTY(QVariantList markers READ markers NOTIFY frameChanged)
     Q_PROPERTY(QVariantList trajectory READ trajectory NOTIFY trajectoryChanged)
     Q_PROPERTY(QVariantList passes READ passes NOTIFY trajectoryChanged)
@@ -49,6 +50,7 @@ public:
     Q_INVOKABLE void select(const QString &id);
     QVariantMap observation() const { return m_observation; }
     QVariantList orbitFields() const;
+    QVariantList relatedObjects() const;
     QVariantList markers() const { return m_markers; }
     QVariantList trajectory() const { return m_trajectory; }
     QVariantList passes() const { return m_passes; }
@@ -59,7 +61,7 @@ public:
     QString status() const { return m_status; }
     bool downloading() const { return m_downloading; }
     bool calculating() const { return m_busy; }
-    int total() const { return static_cast<int>(m_satellites.size()); }
+    int total() const { return static_cast<int>(m_targets.size()); }
     double receiveFrequency() const { return m_frequency; }
     void setReceiveFrequency(double value);
     Q_INVOKABLE void refresh();
@@ -90,6 +92,9 @@ private:
     QThreadPool m_pool;
     QSettings m_settings;
     QVector<Orbit::Satellite> m_satellites;
+    QVector<int> m_targets;
+    QHash<qint64, qint64> m_owners;
+    QHash<qint64, QVector<int>> m_members;
     QVector<int> m_rows;
     QHash<qint64, double> m_elevations;
     QString m_search, m_group = QStringLiteral("stations"), m_source, m_status;

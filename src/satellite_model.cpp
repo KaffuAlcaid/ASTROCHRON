@@ -28,6 +28,32 @@ QVariantMap stateMap(const Orbit::State &state)
         {"range", state.range}, {"speed", state.speed}, {"rangeRate", state.rangeRate},
         {"sunElevation", state.sunElevation}, {"illumination", state.illumination}};
 }
+
+qint64 stationFor(const Orbit::Satellite &satellite)
+{
+    switch (satellite.number) {
+    case 25544: case 36086: case 49044: return 25544;
+    case 48274: case 53239: case 54216: return 48274;
+    default: return 0;
+    }
+}
+
+bool sameOrbit(const Orbit::Satellite &a, const Orbit::Satellite &b)
+{
+    for (const auto *key : {"EPOCH", "MEAN_MOTION", "ECCENTRICITY", "INCLINATION", "RA_OF_ASC_NODE",
+                            "ARG_OF_PERICENTER", "MEAN_ANOMALY", "BSTAR", "MEAN_MOTION_DOT", "MEAN_MOTION_DDOT"})
+        if (a.elements.value(key) != b.elements.value(key)) return false;
+    return true;
+}
+
+qint64 visitingStation(const QString &name)
+{
+    for (const auto *prefix : {"TIANZHOU-", "SHENZHOU-"})
+        if (name.startsWith(QLatin1String(prefix), Qt::CaseInsensitive)) return 48274;
+    for (const auto *prefix : {"CREW DRAGON ", "DRAGON ", "CYGNUS ", "PROGRESS-MS ", "SOYUZ-MS "})
+        if (name.startsWith(QLatin1String(prefix), Qt::CaseInsensitive)) return 25544;
+    return 0;
+}
 }
 
 SatelliteModel::SatelliteModel(QObject *parent) : QAbstractListModel(parent)
@@ -115,10 +141,16 @@ void SatelliteModel::filter()
     beginResetModel();
     m_rows.clear();
     const auto search = m_search.trimmed();
-    for (int i = 0; i < m_satellites.size(); ++i) {
-        const auto &satellite = m_satellites[i];
-        if (search.isEmpty() || satellite.name.contains(search, Qt::CaseInsensitive) || Orbit::displayName(satellite).contains(search) ||
-            QString::number(satellite.number).contains(search) || satellite.internationalId.contains(search, Qt::CaseInsensitive)) m_rows.append(i);
+    for (const int i : m_targets) {
+        for (const int member : m_members.value(m_satellites[i].number)) {
+            const auto &satellite = m_satellites[member];
+            const bool stationAlias = satellite.number == 48274 && QStringLiteral("天宫 中国空间站 天和 TIANHE CSS").contains(search, Qt::CaseInsensitive);
+            if (search.isEmpty() || satellite.name.contains(search, Qt::CaseInsensitive) || Orbit::displayName(satellite).contains(search) ||
+                stationAlias || QString::number(satellite.number).contains(search) || satellite.internationalId.contains(search, Qt::CaseInsensitive)) {
+                m_rows.append(i);
+                break;
+            }
+        }
     }
     endResetModel();
 }
@@ -176,7 +208,8 @@ void SatelliteModel::refresh()
             install(std::move(satellites));
             emit catalogChanged();
         }
-        setStatus(skipped ? QStringLiteral("已获取 %1 个目标，%2 条根数格式异常").arg(count).arg(skipped) : QStringLiteral("已获取 %1 个目标").arg(count));
+        const auto summary = group == m_group ? QStringLiteral("%1 个目标 · %2 条根数").arg(total()).arg(count) : QStringLiteral("已获取 %1 条根数").arg(count);
+        setStatus(summary + (skipped ? QStringLiteral("，%1 条根数格式异常").arg(skipped) : QString()));
     });
 }
 
@@ -200,7 +233,7 @@ void SatelliteModel::importFile(const QUrl &url)
     if (satellites.isEmpty()) { setStatus(error.isEmpty() ? QStringLiteral("文件内没有卫星根数") : error); return; }
     if (!store(payload, QFileInfo(file).fileName(), "local")) return;
     setGroup("local");
-    setStatus(QStringLiteral("已导入 %1 个目标%2").arg(m_satellites.size()).arg(skipped ? QStringLiteral("，%1 条根数格式异常").arg(skipped) : QString()));
+    setStatus(QStringLiteral("%1 个目标 · %2 条根数%3").arg(total()).arg(m_satellites.size()).arg(skipped ? QStringLiteral("，%1 条根数格式异常").arg(skipped) : QString()));
 }
 
 void SatelliteModel::exportSelected(const QUrl &url)
@@ -208,7 +241,9 @@ void SatelliteModel::exportSelected(const QUrl &url)
     const auto *satellite = selected(); if (!satellite) return;
     QFile file(url.toLocalFile());
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) { setStatus(QStringLiteral("文件保存失败：") + file.errorString()); return; }
-    const auto bytes = QJsonDocument(QJsonArray{satellite->elements}).toJson(QJsonDocument::Indented);
+    QJsonArray elements;
+    for (const int member : m_members.value(satellite->number)) elements.append(m_satellites[member].elements);
+    const auto bytes = QJsonDocument(elements).toJson(QJsonDocument::Indented);
     if (file.write(bytes) != bytes.size()) { setStatus(QStringLiteral("轨道文件写入失败：") + file.errorString()); return; }
     setStatus(QStringLiteral("轨道根数已保存"));
 }
@@ -235,16 +270,42 @@ void SatelliteModel::loadSnapshot(qint64 id)
     if (satellites.isEmpty()) { setStatus(error); return; }
     m_snapshot = id; m_source = query.value(1).toString();
     install(std::move(satellites));
-    setStatus(QStringLiteral("已载入 %1 个目标").arg(m_satellites.size()));
+    setStatus(QStringLiteral("%1 个目标 · %2 条根数").arg(total()).arg(m_satellites.size()));
     emit catalogChanged();
 }
 
 void SatelliteModel::install(QVector<Orbit::Satellite> satellites)
 {
     beginResetModel(); m_rows.clear(); m_satellites = std::move(satellites); endResetModel();
+    m_targets.clear(); m_owners.clear(); m_members.clear();
+    QHash<qint64, int> indices;
+    for (int i = 0; i < m_satellites.size(); ++i) indices.insert(m_satellites[i].number, i);
+    QVector<int> stationRecords;
+    for (int i = 0; i < m_satellites.size(); ++i) {
+        const auto &satellite = m_satellites[i];
+        const qint64 station = stationFor(satellite);
+        m_owners.insert(satellite.number, station && indices.contains(station) ? station : satellite.number);
+        if (station && indices.contains(station)) stationRecords.append(i);
+    }
+    // Visiting spacecraft reappear separately when the source supplies an independent orbit.
+    for (int i = 0; i < m_satellites.size(); ++i) {
+        const auto &satellite = m_satellites[i];
+        if (!stationFor(satellite)) {
+            const auto station = visitingStation(satellite.name);
+            if (station && indices.contains(station)) for (const int candidate : stationRecords) {
+                if (stationFor(m_satellites[candidate]) == station && sameOrbit(satellite, m_satellites[candidate])) {
+                    m_owners[satellite.number] = station;
+                    break;
+                }
+            }
+        }
+        m_members[m_owners.value(satellite.number)].append(i);
+    }
+    for (int i = 0; i < m_satellites.size(); ++i)
+        if (m_owners.value(m_satellites[i].number) == m_satellites[i].number) m_targets.append(i);
     m_elevations.clear();
-    if (!selected()) m_selected = m_satellites.isEmpty() ? 0 : m_satellites[0].number;
-    for (const auto &satellite : m_satellites) if (satellite.number == 25544 && m_selected == m_satellites[0].number) { m_selected = 25544; break; }
+    m_selected = m_owners.value(m_selected, 0);
+    if (!m_selected && !m_targets.isEmpty()) m_selected = indices.contains(25544) ? 25544 : m_satellites[m_targets[0]].number;
     filter(); invalidate(); emit selectionChanged(); emit catalogChanged();
 }
 const Orbit::Satellite *SatelliteModel::selected() const
@@ -254,7 +315,7 @@ const Orbit::Satellite *SatelliteModel::selected() const
 }
 void SatelliteModel::select(const QString &id)
 {
-    const auto value = id.toLongLong(); if (value == m_selected) return;
+    const auto value = m_owners.value(id.toLongLong(), 0); if (!value || value == m_selected) return;
     bool exists = false; for (const auto &satellite : m_satellites) if (satellite.number == value) exists = true;
     if (!exists) return;
     m_selected = value; invalidate(); emit selectionChanged();
@@ -277,7 +338,9 @@ void SatelliteModel::requestFrame()
 {
     if (!m_clock || m_satellites.isEmpty()) return;
     if (m_busy) { m_pending = true; return; }
-    const auto satellites = m_satellites;
+    QVector<Orbit::Satellite> satellites;
+    satellites.reserve(m_targets.size());
+    for (const int index : m_targets) satellites.append(m_satellites[index]);
     const auto id = m_selected;
     const auto revision = m_revision;
     const double time = m_clock->unixTime(), reference = m_clock->referenceTime(), frequency = m_frequency;
@@ -364,6 +427,17 @@ void SatelliteModel::requestFrame()
             if (m_pending || revision != m_revision) requestFrame();
         }, Qt::QueuedConnection);
     });
+}
+
+QVariantList SatelliteModel::relatedObjects() const
+{
+    QVariantList result;
+    for (const int index : m_members.value(m_selected)) {
+        const auto &satellite = m_satellites[index];
+        result.append(QVariantMap{{"id", QString::number(satellite.number)}, {"name", Orbit::displayName(satellite)},
+            {"originalName", satellite.name}, {"internationalId", satellite.internationalId}});
+    }
+    return result;
 }
 
 QVariantList SatelliteModel::orbitFields() const

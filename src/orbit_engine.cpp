@@ -323,7 +323,7 @@ Track track(const Satellite &satellite, double start, double end, const Observer
 QString displayName(const Satellite &satellite)
 {
     if (satellite.number == 25544) return QStringLiteral("国际空间站");
-    if (satellite.number == 48274) return QStringLiteral("天宫空间站");
+    if (satellite.number == 48274) return QStringLiteral("天和核心舱（CSS）");
     if (satellite.number == 36086) return QStringLiteral("探索号实验舱");
     if (satellite.number == 49044) return QStringLiteral("科学号实验舱");
     if (satellite.number == 53239) return QStringLiteral("问天实验舱");

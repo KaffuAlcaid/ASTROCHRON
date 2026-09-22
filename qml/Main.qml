@@ -205,6 +205,17 @@ ApplicationWindow {
                     Layout.maximumWidth: 210
                     elide: Text.ElideRight
                 }
+                Button {
+                    text: "更换地点"
+                    icon.source: "qrc:/icons/map-pin.svg"
+                    icon.color: window.textColor
+                    implicitHeight: 30
+                    font.pixelSize: 12
+                    onClicked: {
+                        observerTabs.currentIndex = 1;
+                        observerDialog.open();
+                    }
+                }
                 Label {
                     text: (appState.observerLatitude >= 0 ? "北纬 " : "南纬 ") + Math.abs(appState.observerLatitude).toFixed(4) + "°"
                     font.pixelSize: 12
@@ -224,11 +235,6 @@ ApplicationWindow {
                 }
                 Item {
                     Layout.fillWidth: true
-                }
-                IconButton {
-                    icon.source: "qrc:/icons/settings-2.svg"
-                    tip: "观测地点设置"
-                    onClicked: observerDialog.open()
                 }
             }
         }
@@ -767,6 +773,7 @@ ApplicationWindow {
         ColumnLayout {
             visible: !window.expanded
             Layout.preferredWidth: 324
+            Layout.minimumWidth: 324
             Layout.fillHeight: true
             spacing: 0
             TabBar {
@@ -963,6 +970,22 @@ ApplicationWindow {
                                 value: modelData.value
                             }
                         }
+                        Divider { visible: satellites.relatedObjects.length > 1 }
+                        Label {
+                            visible: satellites.relatedObjects.length > 1
+                            text: "轨道条目（" + satellites.relatedObjects.length + "）"
+                            font.bold: true
+                        }
+                        Repeater {
+                            model: satellites.relatedObjects.length > 1 ? satellites.relatedObjects : []
+                            ColumnLayout {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                spacing: 3
+                                Label { text: modelData.name; Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12 }
+                                Label { text: modelData.id + " · " + modelData.internationalId; color: window.mutedColor; font.pixelSize: 11 }
+                            }
+                        }
                     }
                     ColumnLayout {
                         visible: detailsTabs.currentIndex === 2
@@ -1062,75 +1085,43 @@ ApplicationWindow {
 
     footer: Rectangle {
         color: window.surfaceColor
-        implicitHeight: 106
+        implicitHeight: 68
         Rectangle {
             width: parent.width
             height: 1
             color: window.lineColor
         }
-        ColumnLayout {
+        RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 14
             anchors.rightMargin: 14
-            anchors.topMargin: 6
+            anchors.topMargin: 8
             anchors.bottomMargin: 8
-            spacing: 0
-            RowLayout {
-                Label {
-                    text: "时间轴"
-                    font.bold: true
-                }
-                Label {
-                    text: appState.offsetText
-                    color: window.mutedColor
-                    Layout.leftMargin: 8
-                    font.pixelSize: 12
-                }
-                Label {
-                    text: window.snapshotIndex() > 0 ? "历史根数回放" : "所选根数推演"
-                    color: window.mutedColor
-                    Layout.leftMargin: 8
-                    font.pixelSize: 11
-                }
-                Item {
-                    Layout.fillWidth: true
-                }
-                Button {
-                    text: "回到现在"
-                    icon.source: "qrc:/icons/rotate-ccw.svg"
-                    icon.color: window.textColor
-                    onClicked: appState.resumeLive()
-                }
+            spacing: 16
+            Button {
+                text: "回到现在"
+                icon.source: "qrc:/icons/rotate-ccw.svg"
+                icon.color: window.textColor
+                enabled: !appState.live
+                onClicked: appState.resumeLive()
             }
-            Slider {
+            ColumnLayout {
                 Layout.fillWidth: true
-                from: -720
-                to: 720
-                stepSize: 1
-                value: appState.minuteOffset
-                onMoved: appState.minuteOffset = Math.round(value)
-            }
-            RowLayout {
-                Label {
-                    text: appState.startTimeText
-                    font.pixelSize: 11
-                    color: window.mutedColor
-                }
-                Item {
+                spacing: 0
+                Slider {
                     Layout.fillWidth: true
+                    from: -720
+                    to: 720
+                    stepSize: 1
+                    value: appState.minuteOffset
+                    onMoved: appState.minuteOffset = Math.round(value)
+                    ToolTip.visible: pressed || hovered
+                    ToolTip.text: appState.timeText
                 }
-                Label {
-                    text: "前后各 12 小时"
-                    font.pixelSize: 11
-                    color: window.mutedColor
-                }
-                Item {
-                    Layout.fillWidth: true
-                }
-                Label {
-                    text: appState.endTimeText
-                    font.pixelSize: 11
-                    color: window.mutedColor
+                RowLayout {
+                    Label { text: appState.startTimeText; font.pixelSize: 11; color: window.mutedColor }
+                    Item { Layout.fillWidth: true }
+                    Label { text: appState.endTimeText; font.pixelSize: 11; color: window.mutedColor }
                 }
             }
         }
