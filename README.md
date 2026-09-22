@@ -11,7 +11,36 @@
 * **本地观测地点**：通过城市选择、经纬度输入或地图选点保存常用位置。
 
 首版面向 Windows 11，使用 C++ 与 Qt 开发。
-轨道数据来自 [CelesTrak](https://celestrak.org/NORAD/elements/)，地图数据来自 [Natural Earth](https://www.naturalearthdata.com/)。
+
+## 数据来源与日期
+
+资料更新可能存在延迟。轨道根数以各卫星的历元为准；星等资料采用来源标明的发布日期或观测截止日期。本地获取、导入和记录时间单独显示。
+
+| 数据 | 来源 | 日期与版本 |
+| --- | --- | --- |
+| 轨道根数 | [CelesTrak](https://celestrak.org/NORAD/elements/) 或本地轨道文件 | 各卫星历元与本地获取时间见“资料”页 |
+| 参考星等 | 用户填写或导入的 QuickSat 星等表 | 来源、资料日期及导入或记录时间见“资料”页；日期缺省时显示“来源未注明” |
+| 观测天气 | [Open-Meteo](https://open-meteo.com/en/docs) | 预报时刻与获取时间随当前资料显示 |
+| 世界地图与城市 | [Natural Earth](https://www.naturalearthdata.com/)，1:5000 万 | 陆地 4.1.0、湖泊 5.0.0、国界 5.1.0、城市 5.1.2 |
+| 地形高程 | [Open-Meteo / Copernicus DEM](https://open-meteo.com/en/docs/elevation-api) | 2021 GLO-90，垂直基准 EGM2008 |
+| 大地水准面 | [NGA / GeographicLib EGM2008](https://geographiclib.sourceforge.io/C++/doc/geoid.html) | 5′ 格网，文件日期 2009-08-29 |
+
+### 参考资料
+
+以下为截至 **2026-09-22** 核实的公开资料版本，供查阅卫星身份、运行状态和测光数据。当前计算采用的资料以应用“资料”页的来源与日期为准。
+
+| 资料 | 来源 | 日期说明 |
+| --- | --- | --- |
+| GNSS 编号、轨道面、槽位及分配历史 | [IGS 卫星元数据](https://files.igs.org/pub/station/general/igs_satellite_metadata.snx) | 版本日期 2026-09-02 |
+| 伽利略运行状态、轨道面与槽位 | [GSC 星座状态](https://www.gsc-europa.eu/system-service-status/constellation-information)、[轨道与技术参数](https://www.gsc-europa.eu/system-service-status/orbital-and-technical-parameters) | 资料核对日期 2026-09-22 |
+| 伽利略历书 | [GSC Almanac](https://www.gsc-europa.eu/gsc-products/almanac) | 样本发布日期 2026-09-18 |
+| 北斗身份、运行和健康状态 | [北斗测试评估中心](https://www.csno-tarc.cn/status/constellation) | 状态表发布时间 2026-09-22 |
+| 基础星等目录 | [McCants / QuickSat](https://www.mmccants.org/programs/qsmag.zip) | 2020 版文件日期 2020-09-14；参考条件为 1000 km、满相时的最大亮度 |
+| 星等与雷达截面积合并表 | [Stellarium](https://github.com/Stellarium/stellarium-data/tree/master/satellites) | 文件更新 2026-09-11；其中星等记录包含历史观测 |
+| 卫星亮度实测 | [SCORE](https://score.cps.iau.org/) | 核对时库内观测截至 2026-09-22；每条观测分别记时 |
+| 中国空间站历史测光 | [SeeSat-L](https://www.satobs.org/seesat/Aug-2022/0030.html) | 报告日期 2022-08-03，对应当时的空间站构型 |
+
+公开资料的文件更新日期、观测截止日期和查询日期含义各异。卫星姿态、构型和服务状态随时间变化，光学观测还受大气与天气影响。
 
 参考项目：[ShenMian/tracker](https://github.com/ShenMian/tracker)。
 

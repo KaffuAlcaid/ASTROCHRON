@@ -31,6 +31,7 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(QVariantList snapshots READ snapshots NOTIFY sourceChanged)
     Q_PROPERTY(qint64 snapshotId READ snapshotId NOTIFY sourceChanged)
     Q_PROPERTY(QString sourceText READ sourceText NOTIFY sourceChanged)
+    Q_PROPERTY(QString elementEpoch READ elementEpoch NOTIFY selectionChanged)
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
     Q_PROPERTY(bool downloading READ downloading NOTIFY statusChanged)
     Q_PROPERTY(bool calculating READ calculating NOTIFY statusChanged)
@@ -76,6 +77,7 @@ public:
     QVariantList snapshots() const;
     qint64 snapshotId() const;
     QString sourceText() const;
+    QString elementEpoch() const;
     QString status() const { return m_status; }
     bool downloading() const { return m_downloading; }
     bool calculating() const { return m_busy; }
@@ -98,9 +100,9 @@ public:
     void setReceiveFrequency(double value);
     QVariantMap photometry() const;
     QString photometryStatus() const { return m_photometryStatus; }
-    Q_INVOKABLE bool setPhotometry(double magnitude, int phase, const QString &source);
+    Q_INVOKABLE bool setPhotometry(double magnitude, int phase, const QString &source, const QString &sourceDate);
     Q_INVOKABLE bool clearPhotometry();
-    Q_INVOKABLE void importMagnitudes(const QUrl &url);
+    Q_INVOKABLE bool importMagnitudes(const QUrl &url, const QString &sourceDate);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void importFile(const QUrl &url);
     Q_INVOKABLE void exportSelected(const QUrl &url);
@@ -124,7 +126,7 @@ signals:
 private:
     friend class CatalogModel;
     struct Source { QString group; QString url; qint64 snapshot = 0; qint64 acquired = 0; };
-    struct Photometry { double magnitude = 0; int phase = 90; QString source; bool manual = false; };
+    struct Photometry { double magnitude = 0; int phase = 90; QString source; bool manual = false; QString sourceDate; qint64 recordedAt = 0; };
     void updateMagnitude();
     QString constellationKey(const Orbit::Satellite &satellite) const;
     bool usingLocalConstellation() const;

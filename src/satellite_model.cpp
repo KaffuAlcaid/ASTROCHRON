@@ -11,6 +11,7 @@
 #include <QNetworkReply>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QSqlRecord>
 #include <QStandardPaths>
 #include <QUrlQuery>
 #include <QRegularExpression>
@@ -75,12 +76,18 @@ SatelliteModel::SatelliteModel(QObject *parent) : QAbstractListModel(parent)
     QSqlQuery query(m_database);
     if (!query.exec("CREATE TABLE IF NOT EXISTS snapshots (id INTEGER PRIMARY KEY, group_key TEXT NOT NULL, acquired INTEGER NOT NULL, source TEXT NOT NULL, payload BLOB NOT NULL)"))
         setStatus(QStringLiteral("轨道资料库初始化失败：") + query.lastError().text());
-    if (!query.exec("CREATE TABLE IF NOT EXISTS photometry (norad INTEGER PRIMARY KEY, magnitude REAL NOT NULL, phase INTEGER NOT NULL, source TEXT NOT NULL, manual INTEGER NOT NULL)")) {
+    if (!query.exec("CREATE TABLE IF NOT EXISTS photometry (norad INTEGER PRIMARY KEY, magnitude REAL NOT NULL, phase INTEGER NOT NULL, source TEXT NOT NULL, manual INTEGER NOT NULL, source_date TEXT NOT NULL DEFAULT '', recorded_at INTEGER NOT NULL DEFAULT 0)")) {
         m_photometryStatus = QStringLiteral("星等资料库打开失败：") + query.lastError().text();
         return;
     }
-    if (query.exec("SELECT norad, magnitude, phase, source, manual FROM photometry"))
-        while (query.next()) m_photometry.insert(query.value(0).toLongLong(), {query.value(1).toDouble(), query.value(2).toInt(), query.value(3).toString(), query.value(4).toBool()});
+    const auto columns = m_database.record("photometry");
+    if ((!columns.contains("source_date") && !query.exec("ALTER TABLE photometry ADD COLUMN source_date TEXT NOT NULL DEFAULT ''"))
+        || (!columns.contains("recorded_at") && !query.exec("ALTER TABLE photometry ADD COLUMN recorded_at INTEGER NOT NULL DEFAULT 0"))) {
+        m_photometryStatus = QStringLiteral("星等资料日期保存失败：") + query.lastError().text();
+        return;
+    }
+    if (query.exec("SELECT norad, magnitude, phase, source, manual, source_date, recorded_at FROM photometry"))
+        while (query.next()) m_photometry.insert(query.value(0).toLongLong(), {query.value(1).toDouble(), query.value(2).toInt(), query.value(3).toString(), query.value(4).toBool(), query.value(5).toString(), query.value(6).toLongLong()});
 }
 
 SatelliteModel::~SatelliteModel()
@@ -332,6 +339,11 @@ void SatelliteModel::loadSnapshot(qint64 id)
 
 qint64 SatelliteModel::snapshotId() const { return m_sources.value(m_selected).snapshot; }
 QString SatelliteModel::sourceText() const { return m_sources.value(m_selected).url; }
+QString SatelliteModel::elementEpoch() const
+{
+    const auto *satellite = selected();
+    return satellite ? satellite->elements.value("EPOCH").toString() : QString();
+}
 
 QString SatelliteModel::constellationKey(const Orbit::Satellite &satellite) const
 {
@@ -685,21 +697,29 @@ QVariantMap SatelliteModel::photometry() const
 {
     if (!m_photometry.contains(m_selected)) return {};
     const auto &entry = m_photometry[m_selected];
-    return {{"magnitude", entry.magnitude}, {"phase", entry.phase}, {"source", entry.source}, {"manual", entry.manual}};
+    return {{"magnitude", entry.magnitude}, {"phase", entry.phase}, {"source", entry.source}, {"manual", entry.manual},
+        {"sourceDate", entry.sourceDate}, {"recordedAt", entry.recordedAt ? QDateTime::fromSecsSinceEpoch(entry.recordedAt, QTimeZone::UTC).toString("yyyy-MM-dd HH:mm:ss 'UTC'") : QString()}};
 }
 
-bool SatelliteModel::setPhotometry(double magnitude, int phase, const QString &source)
+bool SatelliteModel::setPhotometry(double magnitude, int phase, const QString &source, const QString &sourceDate)
 {
     if (!selected() || !std::isfinite(magnitude) || magnitude < -30 || magnitude > 30 || (phase != 0 && phase != 90)) return false;
+    const auto date = sourceDate.trimmed();
+    if (!date.isEmpty() && (!QDate::fromString(date, Qt::ISODate).isValid() || QDate::fromString(date, Qt::ISODate).toString(Qt::ISODate) != date)) {
+        m_photometryStatus = QStringLiteral("请填写有效的资料日期（YYYY-MM-DD）");
+        emit photometryChanged(); return false;
+    }
     const QString label = source.trimmed().isEmpty() ? QStringLiteral("手动填写") : source.trimmed();
+    const auto recordedAt = QDateTime::currentSecsSinceEpoch();
     QSqlQuery query(m_database);
-    query.prepare("INSERT OR REPLACE INTO photometry (norad, magnitude, phase, source, manual) VALUES (?, ?, ?, ?, 1)");
+    query.prepare("INSERT OR REPLACE INTO photometry (norad, magnitude, phase, source, manual, source_date, recorded_at) VALUES (?, ?, ?, ?, 1, ?, ?)");
     query.addBindValue(m_selected); query.addBindValue(magnitude); query.addBindValue(phase); query.addBindValue(label);
+    query.addBindValue(date.isEmpty() ? QStringLiteral("") : date); query.addBindValue(recordedAt);
     if (!query.exec()) {
         m_photometryStatus = QStringLiteral("星等参数保存失败：") + query.lastError().text();
         emit photometryChanged(); return false;
     }
-    m_photometry.insert(m_selected, {magnitude, phase, label, true});
+    m_photometry.insert(m_selected, {magnitude, phase, label, true, date, recordedAt});
     m_photometryStatus = QStringLiteral("星等参数已保存");
     updateMagnitude(); emit frameChanged(); emit photometryChanged();
     return true;
@@ -719,11 +739,15 @@ bool SatelliteModel::clearPhotometry()
     return true;
 }
 
-void SatelliteModel::importMagnitudes(const QUrl &url)
+bool SatelliteModel::importMagnitudes(const QUrl &url, const QString &sourceDate)
 {
-    const auto fail = [this](const QString &message) { m_photometryStatus = message; emit photometryChanged(); };
+    const auto fail = [this](const QString &message) { m_photometryStatus = message; emit photometryChanged(); return false; };
+    const auto date = sourceDate.trimmed();
+    if (!date.isEmpty() && (!QDate::fromString(date, Qt::ISODate).isValid() || QDate::fromString(date, Qt::ISODate).toString(Qt::ISODate) != date))
+        return fail(QStringLiteral("请填写有效的资料日期（YYYY-MM-DD）"));
+    const auto recordedAt = QDateTime::currentSecsSinceEpoch();
     QFile file(url.toLocalFile());
-    if (!file.open(QIODevice::ReadOnly)) { fail(QStringLiteral("星等表打开失败：") + file.errorString()); return; }
+    if (!file.open(QIODevice::ReadOnly)) return fail(QStringLiteral("星等表打开失败：") + file.errorString());
     QHash<qint64, Photometry> entries;
     int skipped = 0, preserved = 0;
     const auto source = QStringLiteral("QuickSat · ") + QFileInfo(file).fileName();
@@ -736,24 +760,26 @@ void SatelliteModel::importMagnitudes(const QUrl &url)
         // QuickSat columns 34-37: magnitude at 1000 km and full phase; 20 means unknown.
         if (line.size() < 37 || !validId || id <= 0 || !validMagnitude || !std::isfinite(magnitude)
             || magnitude == 20 || magnitude < -30 || magnitude > 30) { ++skipped; continue; }
-        entries.insert(id, {magnitude, 0, source, false});
+        entries.insert(id, {magnitude, 0, source, false, date, recordedAt});
     }
-    if (entries.isEmpty()) { fail(QStringLiteral("文件中没有可用的 QuickSat 星等记录")); return; }
-    if (!m_database.transaction()) { fail(QStringLiteral("星等资料库写入失败：") + m_database.lastError().text()); return; }
+    if (entries.isEmpty()) return fail(QStringLiteral("文件中没有可用的 QuickSat 星等记录"));
+    if (!m_database.transaction()) return fail(QStringLiteral("星等资料库写入失败：") + m_database.lastError().text());
     QSqlQuery query(m_database);
-    query.prepare("INSERT OR REPLACE INTO photometry (norad, magnitude, phase, source, manual) VALUES (?, ?, ?, ?, 0)");
+    query.prepare("INSERT OR REPLACE INTO photometry (norad, magnitude, phase, source, manual, source_date, recorded_at) VALUES (?, ?, ?, ?, 0, ?, ?)");
     for (auto it = entries.begin(); it != entries.end();) {
         if (m_photometry.value(it.key()).manual) { ++preserved; it = entries.erase(it); continue; }
         query.bindValue(0, it.key()); query.bindValue(1, it->magnitude); query.bindValue(2, it->phase); query.bindValue(3, it->source);
+        query.bindValue(4, date.isEmpty() ? QStringLiteral("") : date); query.bindValue(5, recordedAt);
         if (!query.exec()) {
-            m_database.rollback(); fail(QStringLiteral("星等表导入失败：") + query.lastError().text()); return;
+            m_database.rollback(); return fail(QStringLiteral("星等表导入失败：") + query.lastError().text());
         }
         ++it;
     }
-    if (!m_database.commit()) { m_database.rollback(); fail(QStringLiteral("星等表保存失败：") + m_database.lastError().text()); return; }
+    if (!m_database.commit()) { m_database.rollback(); return fail(QStringLiteral("星等表保存失败：") + m_database.lastError().text()); }
     for (auto it = entries.cbegin(); it != entries.cend(); ++it) m_photometry.insert(it.key(), it.value());
     m_photometryStatus = QStringLiteral("已导入 %1 条星等记录，保留 %2 条手动参数，跳过 %3 行空缺或格式异常记录").arg(entries.size()).arg(preserved).arg(skipped);
     updateMagnitude(); emit frameChanged(); emit photometryChanged();
+    return true;
 }
 
 void SatelliteModel::updateMagnitude()

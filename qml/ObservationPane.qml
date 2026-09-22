@@ -54,6 +54,7 @@ ColumnLayout {
     TabBar {
         id: tabs
         Layout.fillWidth: true
+        onCurrentIndexChanged: Qt.callLater(function() { scroll.contentItem.contentY = 0; })
         DetailTab {
             text: "观测"
         }
@@ -477,8 +478,12 @@ ColumnLayout {
                     text: "轨道资料"
                     font.bold: true
                 }
+                FieldRow {
+                    label: "根数历元（UTC）"
+                    value: pane.satellites.elementEpoch.replace("T", " ") || "来源未注明"
+                }
                 Label {
-                    text: "获取时间"
+                    text: "本地获取时间"
                     color: Theme.muted
                 }
                 ComboBox {
@@ -508,6 +513,13 @@ ColumnLayout {
                     font.pixelSize: 12
                 }
                 Label {
+                    text: "资料更新可能存在延迟。根数历元表示轨道参数的参考时刻，获取时间表示资料保存到本机的时间。"
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    color: Theme.muted
+                    font.pixelSize: 12
+                }
+                Label {
                     text: "根数按协调世界时记时，观测时间采用地点时区。光学条件按卫星受阳光照射、太阳高度角低于 -6° 筛选；实际可见性还与星等、天气和地形有关。"
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
@@ -515,10 +527,80 @@ ColumnLayout {
                     font.pixelSize: 12
                 }
                 SectionTitle {
-                    text: "数据与计算"
+                    text: "星等资料"
+                }
+                FieldRow {
+                    label: "来源"
+                    value: pane.satellites.photometry.source || "待填写参考星等"
+                }
+                FieldRow {
+                    label: "资料日期"
+                    value: pane.satellites.photometry.sourceDate || "来源未注明"
+                }
+                FieldRow {
+                    label: pane.satellites.photometry.manual ? "记录时间" : "导入时间"
+                    value: pane.satellites.photometry.recordedAt || "尚无记录"
+                }
+                SectionTitle {
+                    text: "天气资料"
+                }
+                FieldRow { label: "来源"; value: "Open-Meteo" }
+                FieldRow { label: "预报时刻"; value: pane.forecast.time || "暂无数据" }
+                FieldRow { label: "获取时间"; value: pane.weather.fetchedAt || "尚无记录" }
+                SectionTitle {
+                    text: "地图与高程"
                 }
                 Label {
-                    text: "底图：Natural Earth，1:5000 万\n高程：Open-Meteo / Copernicus DEM\n高度基准：EGM2008\n大地水准面：NGA / GeographicLib\n轨道传播：Vallado SGP4\n太阳位置：Astronomy Engine"
+                    text: "Natural Earth，1:5000 万\n陆地 4.1.0 · 湖泊 5.0.0\n国界 5.1.0 · 城市 5.1.2\n高程：Open-Meteo / Copernicus DEM 2021 GLO-90\n大地水准面：NGA / GeographicLib EGM2008，5′ 格网\n格网文件日期：2009-08-29"
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    color: Theme.muted
+                    font.pixelSize: 12
+                    lineHeight: 1.5
+                }
+                SectionTitle { text: "参考资料" }
+                Label {
+                    text: "以下为截至 2026-09-22 核实的公开资料版本。当前计算采用的资料以上方记录为准，各来源更新可能存在延迟。"
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    color: Theme.muted
+                    font.pixelSize: 12
+                }
+                Repeater {
+                    model: [
+                        {name: "IGS 卫星元数据", url: "https://files.igs.org/pub/station/general/igs_satellite_metadata.snx", date: "版本日期：2026-09-02"},
+                        {name: "GSC 伽利略星座与槽位资料", url: "https://www.gsc-europa.eu/system-service-status/constellation-information", date: "资料核对日期：2026-09-22"},
+                        {name: "GSC 伽利略历书", url: "https://www.gsc-europa.eu/gsc-products/almanac", date: "样本发布日期：2026-09-18"},
+                        {name: "北斗测试评估中心星座状态", url: "https://www.csno-tarc.cn/status/constellation", date: "状态表发布时间：2026-09-22"},
+                        {name: "McCants / QuickSat 星等表", url: "https://www.mmccants.org/programs/qsmag.zip", date: "2020 版文件日期：2020-09-14"},
+                        {name: "Stellarium 卫星合并表", url: "https://github.com/Stellarium/stellarium-data/tree/master/satellites", date: "文件更新：2026-09-11；星等含历史观测"},
+                        {name: "SCORE 卫星测光资料", url: "https://score.cps.iau.org/", date: "核对时库内观测截至：2026-09-22"},
+                        {name: "SeeSat-L 中国空间站测光记录", url: "https://www.satobs.org/seesat/Aug-2022/0030.html", date: "报告日期：2022-08-03；对应当时构型"}
+                    ]
+                    ColumnLayout {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        spacing: 3
+                        Label {
+                            text: "<a href='" + modelData.url + "'>" + modelData.name + "</a>"
+                            textFormat: Text.RichText
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                            font.pixelSize: 12
+                            onLinkActivated: link => Qt.openUrlExternally(link)
+                        }
+                        Label {
+                            text: modelData.date
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                            font.pixelSize: 11
+                            color: Theme.muted
+                        }
+                    }
+                }
+                SectionTitle { text: "计算与许可" }
+                Label {
+                    text: "轨道传播：Vallado SGP4\n太阳位置：Astronomy Engine\n第三方许可与署名：程序目录中的 THIRD_PARTY_NOTICES.md 和 licenses 文件夹。"
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     color: Theme.muted

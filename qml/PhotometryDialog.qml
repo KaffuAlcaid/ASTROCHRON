@@ -17,6 +17,7 @@ Dialog {
         magnitude.text = parameters.magnitude === undefined ? "" : parameters.magnitude.toFixed(2);
         phase.currentIndex = parameters.phase === 0 ? 0 : 1;
         source.text = parameters.source || "";
+        sourceDate.text = parameters.sourceDate || "";
     }
     onOpened: loadParameters()
     contentItem: ColumnLayout {
@@ -61,6 +62,15 @@ Dialog {
                 placeholderText: "观测记录或资料名称"
                 selectByMouse: true
             }
+            Label { text: "资料日期" }
+            TextField {
+                id: sourceDate
+                Layout.fillWidth: true
+                placeholderText: "YYYY-MM-DD（可留空）"
+                selectByMouse: true
+                font.family: Theme.numberFont
+                validator: RegularExpressionValidator { regularExpression: /(?:\d{4}-\d{2}-\d{2})?/ }
+            }
         }
         RowLayout {
             Layout.fillWidth: true
@@ -78,8 +88,8 @@ Dialog {
             }
             Button {
                 text: "保存"
-                enabled: magnitude.text.trim().length > 0 && magnitude.acceptableInput
-                onClicked: if (dialog.satellites.setPhotometry(Number(magnitude.text), phase.currentIndex === 0 ? 0 : 90, source.text)) dialog.loadParameters()
+                enabled: magnitude.text.trim().length > 0 && magnitude.acceptableInput && sourceDate.acceptableInput
+                onClicked: if (dialog.satellites.setPhotometry(Number(magnitude.text), phase.currentIndex === 0 ? 0 : 90, source.text, sourceDate.text)) dialog.loadParameters()
             }
         }
         Label {
@@ -118,8 +128,57 @@ Dialog {
         title: "导入 QuickSat 星等表"
         nameFilters: ["QuickSat 星等表 (*.mag)"]
         onAccepted: {
-            dialog.satellites.importMagnitudes(selectedFile);
-            dialog.loadParameters();
+            importDate.text = "";
+            importDetails.open();
+        }
+    }
+    Dialog {
+        id: importDetails
+        property string error: ""
+        title: "星等表资料日期"
+        modal: true
+        anchors.centerIn: Overlay.overlay
+        width: Math.min(420, Overlay.overlay ? Overlay.overlay.width - 32 : 420)
+        onOpened: error = ""
+        contentItem: ColumnLayout {
+            spacing: 12
+            Label {
+                text: "采用来源标明的发布日期或观测截止日期。"
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                color: Theme.muted
+            }
+            TextField {
+                id: importDate
+                Layout.fillWidth: true
+                placeholderText: "YYYY-MM-DD（可留空）"
+                selectByMouse: true
+                font.family: Theme.numberFont
+                validator: RegularExpressionValidator { regularExpression: /(?:\d{4}-\d{2}-\d{2})?/ }
+            }
+            Label {
+                text: importDetails.error
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                color: Theme.muted
+                visible: text.length > 0
+            }
+            RowLayout {
+                Item { Layout.fillWidth: true }
+                Button { text: "取消"; onClicked: importDetails.close() }
+                Button {
+                    text: "导入"
+                    enabled: importDate.acceptableInput
+                    onClicked: {
+                        if (dialog.satellites.importMagnitudes(importDialog.selectedFile, importDate.text)) {
+                            importDetails.close();
+                            dialog.loadParameters();
+                        } else {
+                            importDetails.error = dialog.satellites.photometryStatus;
+                        }
+                    }
+                }
+            }
         }
     }
 }
