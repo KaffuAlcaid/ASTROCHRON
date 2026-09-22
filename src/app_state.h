@@ -96,6 +96,8 @@ private:
     double m_longitude;
     double m_height;
     int m_offset = 0;
+    int m_secondOffset = 0;
+    int m_millisecondOffset = 0;
     bool m_live = true;
     bool m_dark;
     QNetworkAccessManager m_network;

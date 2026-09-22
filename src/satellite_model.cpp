@@ -13,6 +13,7 @@
 #include <QStandardPaths>
 #include <QUrlQuery>
 #include <cmath>
+#include <algorithm>
 
 namespace {
 QString formatTime(double seconds, const QTimeZone &zone, const char *format = "MM-dd HH:mm:ss")
@@ -215,6 +216,7 @@ void SatelliteModel::exportSelected(const QUrl &url)
 QVariantList SatelliteModel::snapshots() const
 {
     QVariantList result;
+    if (!m_database.isOpen()) return result;
     QSqlQuery query(m_database);
     query.prepare("SELECT id, acquired, source FROM snapshots WHERE group_key = ? ORDER BY id DESC");
     query.addBindValue(m_group);
@@ -260,7 +262,7 @@ void SatelliteModel::select(const QString &id)
 void SatelliteModel::invalidate()
 {
     ++m_revision; m_needTrack = true;
-    m_observation.clear(); m_trajectory.clear(); m_passes.clear(); m_markers.clear();
+    m_observation.clear(); m_trajectory.clear(); m_passes.clear(); m_markers.clear(); m_shadowEvents.clear();
     emit frameChanged(); emit trajectoryChanged(); requestFrame();
 }
 
@@ -287,7 +289,7 @@ void SatelliteModel::requestFrame()
     m_busy = true; m_pending = false; m_needTrack = false;
     emit statusChanged();
     m_pool.start([this, satellites, id, revision, time, reference, frequency, observer, zone, calculateTrack, hasHeight] {
-        QVariantList markers, trajectory, passes;
+        QVariantList markers, trajectory, passes, shadowEvents;
         QVariantMap observation;
         QHash<qint64, double> elevations;
         const auto sun = Orbit::sunAt(time);
@@ -313,6 +315,25 @@ void SatelliteModel::requestFrame()
             if (calculateTrack) {
                 const auto track = Orbit::track(satellite, reference - 43200, reference + 43200, observer);
                 for (const auto &sample : track.samples) trajectory.append(stateMap(sample));
+                for (qsizetype i = 1; i < track.samples.size(); ++i) {
+                    const auto &a = track.samples[i - 1], &b = track.samples[i];
+                    if (b.time - a.time > 31) continue;
+                    for (const int boundary : {1, 2}) {
+                        const bool before = a.illumination >= boundary, after = b.illumination >= boundary;
+                        if (before == after) continue;
+                        double left = a.time, right = b.time;
+                        while (right - left > 0.5) {
+                            const double middle = (left + right) / 2;
+                            const auto stateAt = Orbit::propagate(satellite, middle, observer, Orbit::sunAt(middle));
+                            if (!stateAt) break;
+                            if ((stateAt->illumination >= boundary) == before) left = middle; else right = middle;
+                        }
+                        const double eventTime = (left + right) / 2;
+                        shadowEvents.append(QVariantMap{{"time", eventTime}, {"timeText", formatTime(eventTime, zone)},
+                            {"name", (after ? QStringLiteral("进入") : QStringLiteral("离开")) + (boundary == 2 ? QStringLiteral("本影") : QStringLiteral("半影"))}});
+                    }
+                }
+                std::sort(shadowEvents.begin(), shadowEvents.end(), [](const QVariant &a, const QVariant &b) { return a.toMap().value("time").toDouble() < b.toMap().value("time").toDouble(); });
                 for (const auto &pass : track.passes) {
                     QStringList visible;
                     for (const auto &interval : pass.visibleIntervals)
@@ -331,13 +352,13 @@ void SatelliteModel::requestFrame()
             }
         }
         QMetaObject::invokeMethod(this, [this, revision, reference, calculateTrack, markers = std::move(markers), observation = std::move(observation),
-            trajectory = std::move(trajectory), passes = std::move(passes), elevations = std::move(elevations)]() mutable {
+            trajectory = std::move(trajectory), passes = std::move(passes), shadowEvents = std::move(shadowEvents), elevations = std::move(elevations)]() mutable {
             m_busy = false;
             if (revision == m_revision) {
                 m_markers = std::move(markers); m_observation = std::move(observation); m_elevations = std::move(elevations);
                 emit frameChanged();
                 if (!m_rows.isEmpty()) emit dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1), {ElevationRole});
-                if (calculateTrack) { m_trajectory = std::move(trajectory); m_passes = std::move(passes); m_trackReference = reference; emit trajectoryChanged(); }
+                if (calculateTrack) { m_trajectory = std::move(trajectory); m_passes = std::move(passes); m_shadowEvents = std::move(shadowEvents); m_trackReference = reference; emit trajectoryChanged(); }
             } else if (calculateTrack) m_needTrack = true;
             emit statusChanged();
             if (m_pending || revision != m_revision) requestFrame();

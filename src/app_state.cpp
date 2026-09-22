@@ -79,7 +79,11 @@ void AppState::setAutomaticElevation(bool enabled)
 {
     m_automaticElevation = enabled;
     m_settings.setValue("observer/automaticElevation", enabled);
-    if (!enabled) { ++m_elevationRequest; m_elevationBusy = false; }
+    if (!enabled) {
+        ++m_elevationRequest;
+        if (m_elevationBusy) m_elevationStatus = m_settings.value("observer/heightSource", QStringLiteral("海拔待填写")).toString();
+        m_elevationBusy = false;
+    }
     emit elevationChanged();
     if (enabled && !hasObserverHeight()) lookupElevation();
 }
@@ -160,10 +164,18 @@ void AppState::removeObserver(int index)
 }
 void AppState::seek(double seconds)
 {
-    setMinuteOffset(static_cast<int>(std::lround((seconds - referenceTime()) / 60.0)));
+    if (!std::isfinite(seconds)) return;
+    const auto milliseconds = qBound<qint64>(-43200000LL, static_cast<qint64>(std::llround((seconds - referenceTime()) * 1000)), 43200000LL);
+    const auto offset = static_cast<int>(milliseconds / 1000);
+    m_live = false;
+    m_offset = offset / 60;
+    m_secondOffset = offset % 60;
+    m_millisecondOffset = static_cast<int>(milliseconds % 1000);
+    updateSun();
+    emit timeChanged();
 }
 
-QDateTime AppState::selectedTime() const { return m_reference.addSecs(m_offset * 60); }
+QDateTime AppState::selectedTime() const { return m_reference.addMSecs((m_offset * 60 + m_secondOffset) * 1000LL + m_millisecondOffset); }
 QString AppState::timeText() const { return selectedTime().toTimeZone(m_timeZone).toString("yyyy-MM-dd HH:mm:ss"); }
 QString AppState::startTimeText() const { return m_reference.addSecs(-43200).toTimeZone(m_timeZone).toString("MM-dd HH:mm"); }
 QString AppState::endTimeText() const { return m_reference.addSecs(43200).toTimeZone(m_timeZone).toString("MM-dd HH:mm"); }
@@ -178,15 +190,19 @@ QStringList AppState::timeZones() const
 QString AppState::offsetText() const
 {
     if (m_live) return QStringLiteral("当前时刻");
-    if (m_offset == 0) return QStringLiteral("暂停");
-    return QStringLiteral("%1 %2 小时 %3 分").arg(m_offset < 0 ? QStringLiteral("过去") : QStringLiteral("未来"))
-        .arg(std::abs(m_offset) / 60).arg(std::abs(m_offset) % 60);
+    const int seconds = m_offset * 60 + m_secondOffset;
+    if (seconds == 0) return QStringLiteral("暂停");
+    return QStringLiteral("%1 %2 小时 %3 分%4").arg(seconds < 0 ? QStringLiteral("过去") : QStringLiteral("未来"))
+        .arg(std::abs(seconds) / 3600).arg(std::abs(seconds) / 60 % 60)
+        .arg(m_secondOffset ? QStringLiteral(" %1 秒").arg(std::abs(m_secondOffset)) : QString());
 }
 
 void AppState::setMinuteOffset(int minutes)
 {
     m_live = false;
     m_offset = qBound(-720, minutes, 720);
+    m_secondOffset = 0;
+    m_millisecondOffset = 0;
     updateSun();
     emit timeChanged();
 }
@@ -195,6 +211,8 @@ void AppState::resumeLive()
 {
     m_live = true;
     m_offset = 0;
+    m_secondOffset = 0;
+    m_millisecondOffset = 0;
     m_reference = QDateTime::currentDateTimeUtc();
     updateSun();
     emit timeChanged();

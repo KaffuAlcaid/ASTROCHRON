@@ -21,6 +21,7 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(QVariantList markers READ markers NOTIFY frameChanged)
     Q_PROPERTY(QVariantList trajectory READ trajectory NOTIFY trajectoryChanged)
     Q_PROPERTY(QVariantList passes READ passes NOTIFY trajectoryChanged)
+    Q_PROPERTY(QVariantList shadowEvents READ shadowEvents NOTIFY trajectoryChanged)
     Q_PROPERTY(QVariantList snapshots READ snapshots NOTIFY catalogChanged)
     Q_PROPERTY(qint64 snapshotId READ snapshotId NOTIFY catalogChanged)
     Q_PROPERTY(QString sourceText READ sourceText NOTIFY catalogChanged)
@@ -51,6 +52,7 @@ public:
     QVariantList markers() const { return m_markers; }
     QVariantList trajectory() const { return m_trajectory; }
     QVariantList passes() const { return m_passes; }
+    QVariantList shadowEvents() const { return m_shadowEvents; }
     QVariantList snapshots() const;
     qint64 snapshotId() const { return m_snapshot; }
     QString sourceText() const { return m_source; }
@@ -98,5 +100,5 @@ private:
     double m_frequency = 145.8;
     bool m_downloading = false, m_busy = false, m_needTrack = true, m_pending = false;
     QVariantMap m_observation;
-    QVariantList m_markers, m_trajectory, m_passes;
+    QVariantList m_markers, m_trajectory, m_passes, m_shadowEvents;
 };

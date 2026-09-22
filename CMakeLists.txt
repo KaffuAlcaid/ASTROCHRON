@@ -40,13 +40,14 @@ set_target_properties(astrochron PROPERTIES OUTPUT_NAME ASTROCHRON)
 qt_add_qml_module(astrochron
     URI Astrochron
     VERSION 1.0
-    QML_FILES qml/Main.qml
+    QML_FILES qml/Main.qml qml/SkyPlot.qml
     SOURCES
         src/app_state.h src/app_state.cpp
         src/map_data.h src/map_data.cpp
         src/world_map.h src/world_map.cpp
         src/orbit_engine.h src/orbit_engine.cpp
         src/satellite_model.h src/satellite_model.cpp
+        src/orbit_layer.h src/orbit_layer.cpp
 )
 target_include_directories(astrochron PRIVATE src)
 target_link_libraries(astrochron PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Sql astronomy_engine sgp4)
@@ -71,6 +72,8 @@ qt_add_resources(astrochron icons
         assets/icons/plus.svg assets/icons/minus.svg assets/icons/globe.svg
         assets/icons/maximize-2.svg assets/icons/minimize-2.svg assets/icons/map-pin.svg
         assets/icons/settings-2.svg assets/icons/rotate-ccw.svg assets/icons/moon.svg
+        assets/icons/refresh-cw.svg assets/icons/download.svg assets/icons/folder-open.svg
+        assets/icons/copy.svg assets/icons/crosshair.svg
 )
 qt_add_shaders(astrochron daynight_shader
     PREFIX /
@@ -82,3 +85,4 @@ install(FILES THIRD_PARTY_NOTICES.md DESTINATION .)
 install(FILES third_party/astronomy-engine/LICENSE DESTINATION licenses/astronomy-engine)
 install(FILES assets/icons/LICENSE DESTINATION licenses/lucide)
 install(FILES third_party/sgp4/LICENSE DESTINATION licenses/sgp4)
+install(FILES third_party/qt/LGPL-3.0-only.txt third_party/qt/GPL-3.0-only.txt third_party/qt/Qt-GPL-exception-1.0.txt DESTINATION licenses/qt)
