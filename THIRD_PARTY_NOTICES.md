@@ -1,5 +1,11 @@
 # 第三方数据与软件
 
+## CelesTrak
+
+卫星轨道根数来自 [CelesTrak](https://celestrak.org/NORAD/elements/)，通过 [GP 数据服务](https://celestrak.org/NORAD/documentation/gp-data-formats.php) 获取
+
+本地保存的轨道资料保留来源、获取时间和各对象历元，数据使用遵循提供方条款，项目源码的 Apache-2.0 许可适用于 ASTROCHRON 自有代码
+
 ## 星等资料
 
 McCants / QuickSat 星等表：Mike McCants，`qs.mag` 文件日期为 2020-09-14。
