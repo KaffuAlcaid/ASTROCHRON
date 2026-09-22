@@ -37,10 +37,16 @@ if(MSVC)
     target_compile_options(sgp4 PRIVATE /utf-8)
 endif()
 set_target_properties(astrochron PROPERTIES OUTPUT_NAME ASTROCHRON)
+set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(astrochron
     URI Astrochron
     VERSION 1.0
-    QML_FILES qml/Main.qml qml/SkyPlot.qml
+    QML_FILES
+        qml/Main.qml qml/SkyPlot.qml qml/Theme.qml
+        qml/IconButton.qml qml/DetailTab.qml qml/FieldRow.qml
+        qml/SatelliteSidebar.qml qml/MapToolbar.qml qml/LayerMenu.qml
+        qml/MapWorkspace.qml qml/PassTable.qml qml/ObservationPane.qml qml/Timeline.qml
+        qml/ObserverDialog.qml qml/SettingsDialog.qml
     SOURCES
         src/app_state.h src/app_state.cpp
         src/map_data.h src/map_data.cpp
@@ -75,6 +81,7 @@ qt_add_resources(astrochron icons
         assets/icons/settings-2.svg assets/icons/rotate-ccw.svg assets/icons/moon.svg
         assets/icons/refresh-cw.svg assets/icons/download.svg assets/icons/folder-open.svg
         assets/icons/copy.svg assets/icons/crosshair.svg
+        assets/icons/info.svg
 )
 qt_add_shaders(astrochron daynight_shader
     PREFIX /

@@ -331,8 +331,12 @@ void SatelliteModel::invalidate()
 void SatelliteModel::setReceiveFrequency(double value)
 {
     if (!std::isfinite(value) || value < 0 || value > 1000000) return;
+    if (m_frequency == value) return;
     m_frequency = value; m_settings.setValue("radio/frequencyMHz", value);
-    requestFrame();
+    emit receiveFrequencyChanged();
+    if (m_observation.contains("rangeRate"))
+        m_observation.insert("doppler", -m_observation.value("rangeRate").toDouble() / 299792.458 * m_frequency * 1e6);
+    emit frameChanged();
 }
 
 void SatelliteModel::requestFrame()
@@ -344,7 +348,7 @@ void SatelliteModel::requestFrame()
     for (const int index : m_targets) satellites.append(m_satellites[index]);
     const auto id = m_selected;
     const auto revision = m_revision;
-    const double time = m_clock->unixTime(), reference = m_clock->referenceTime(), frequency = m_frequency;
+    const double time = m_clock->unixTime(), reference = m_clock->referenceTime();
     const Orbit::Observer observer{m_clock->observerLatitude(), m_clock->observerLongitude(), m_clock->ellipsoidHeight() / 1000.0, m_clock->minimumElevation()};
     const QTimeZone zone(m_clock->timeZone().toUtf8());
     const bool calculateTrack = m_needTrack;
@@ -352,7 +356,7 @@ void SatelliteModel::requestFrame()
     if (!std::isfinite(observer.heightKm)) { setStatus(QStringLiteral("大地水准面数据读取失败")); return; }
     m_busy = true; m_pending = false; m_needTrack = false;
     emit statusChanged();
-    m_pool.start([this, satellites, id, revision, time, reference, frequency, observer, zone, calculateTrack, hasHeight] {
+    m_pool.start([this, satellites, id, revision, time, reference, observer, zone, calculateTrack, hasHeight] {
         QVariantList markers, trajectory, passes, shadowEvents;
         QVariantMap observation;
         QHash<qint64, double> elevations;
@@ -372,7 +376,6 @@ void SatelliteModel::requestFrame()
             observation.insert("direction", Orbit::directionName(state->azimuth));
             observation.insert("motion", state->rangeRate < 0 ? QStringLiteral("正在接近") : QStringLiteral("正在远离"));
             observation.insert("epochAge", (time - satellite.epoch) / 86400.0);
-            observation.insert("doppler", -state->rangeRate / 299792.458 * frequency * 1e6);
             observation.insert("heightEstimated", !hasHeight);
             observation.insert("visibility", state->elevation < observer.minimumElevation ? QStringLiteral("低于最低高度角")
                 : state->illumination != 0 ? QStringLiteral("位于地影") : state->sunElevation > -6 ? QStringLiteral("天空较亮") : QStringLiteral("具备光照观测条件"));
@@ -393,7 +396,7 @@ void SatelliteModel::requestFrame()
                             if ((stateAt->illumination >= boundary) == before) left = middle; else right = middle;
                         }
                         const double eventTime = (left + right) / 2;
-                        shadowEvents.append(QVariantMap{{"time", eventTime}, {"timeText", formatTime(eventTime, zone)},
+                        shadowEvents.append(QVariantMap{{"time", eventTime}, {"timeText", formatTime(eventTime, zone)}, {"entering", after}, {"umbra", boundary == 2},
                             {"name", (after ? QStringLiteral("进入") : QStringLiteral("离开")) + (boundary == 2 ? QStringLiteral("本影") : QStringLiteral("半影"))}});
                     }
                 }
@@ -403,6 +406,7 @@ void SatelliteModel::requestFrame()
                     for (const auto &interval : pass.visibleIntervals)
                         visible.append(formatTime(interval[0], zone, "HH:mm:ss") + " - " + formatTime(interval[1], zone, "HH:mm:ss"));
                     passes.append(QVariantMap{{"start", pass.rise.time}, {"peak", pass.peak.time}, {"end", pass.set.time},
+                        {"startClipped", pass.startsBeforeWindow}, {"endClipped", pass.endsAfterWindow},
                         {"startText", (pass.startsBeforeWindow ? QStringLiteral("早于 ") : QString()) + formatTime(pass.rise.time, zone)},
                         {"peakText", formatTime(pass.peak.time, zone)},
                         {"endText", (pass.endsAfterWindow ? QStringLiteral("晚于 ") : QString()) + formatTime(pass.set.time, zone)},
@@ -420,6 +424,8 @@ void SatelliteModel::requestFrame()
             m_busy = false;
             if (revision == m_revision) {
                 m_markers = std::move(markers); m_observation = std::move(observation); m_elevations = std::move(elevations);
+                if (m_observation.contains("rangeRate"))
+                    m_observation.insert("doppler", -m_observation.value("rangeRate").toDouble() / 299792.458 * m_frequency * 1e6);
                 emit frameChanged();
                 if (!m_rows.isEmpty()) emit dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1), {ElevationRole});
                 if (calculateTrack) { m_trajectory = std::move(trajectory); m_passes = std::move(passes); m_shadowEvents = std::move(shadowEvents); m_trackReference = reference; emit trajectoryChanged(); }

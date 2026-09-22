@@ -30,7 +30,7 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(bool downloading READ downloading NOTIFY statusChanged)
     Q_PROPERTY(bool calculating READ calculating NOTIFY statusChanged)
     Q_PROPERTY(int total READ total NOTIFY catalogChanged)
-    Q_PROPERTY(double receiveFrequency READ receiveFrequency WRITE setReceiveFrequency NOTIFY frameChanged)
+    Q_PROPERTY(double receiveFrequency READ receiveFrequency WRITE setReceiveFrequency NOTIFY receiveFrequencyChanged)
 
 public:
     explicit SatelliteModel(QObject *parent = nullptr);
@@ -77,6 +77,7 @@ signals:
     void frameChanged();
     void trajectoryChanged();
     void statusChanged();
+    void receiveFrequencyChanged();
 
 private:
     void filter();

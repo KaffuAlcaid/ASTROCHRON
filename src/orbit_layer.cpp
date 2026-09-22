@@ -84,7 +84,7 @@ QSGNode *OrbitLayer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     auto *root = new QSGNode;
     if (!m_map) return root;
     const double worldWidth = m_map->pixelsPerDegree() * 360;
-    QVector<QPointF> past, future, markers, selected, coverage;
+    QVector<QPointF> past, future, highlightedPast, highlightedFuture, markers, selected, coverage;
     double dashOffset = 0;
     const auto segment = [&](QVector<QPointF> &vertices, QPointF a, QPointF b, double thickness, bool dashed = false) {
         if (b.x() - a.x() > worldWidth / 2) b.rx() -= worldWidth;
@@ -110,15 +110,18 @@ QSGNode *OrbitLayer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         if (tb - ta > 31) continue;
         const auto pa = project(a.value("longitude").toDouble(), a.value("latitude").toDouble());
         const auto pb = project(b.value("longitude").toDouble(), b.value("latitude").toDouble());
-        if (tb <= m_time) { if (m_showPast) segment(past, pa, pb, 1.5, true); }
-        else if (ta >= m_time) { if (m_showFuture) segment(future, pa, pb, 1.6); }
+        const bool highlighted = (ta + tb) / 2 >= m_highlightStart && (ta + tb) / 2 <= m_highlightEnd;
+        auto &pastPath = highlighted ? highlightedPast : past;
+        auto &futurePath = highlighted ? highlightedFuture : future;
+        if (tb <= m_time) { if (m_showPast) segment(pastPath, pa, pb, highlighted ? 1.5 : 1.25, true); }
+        else if (ta >= m_time) { if (m_showFuture) segment(futurePath, pa, pb, highlighted ? 2.5 : 2.0); }
         else {
             auto end = pb;
             if (end.x() - pa.x() > worldWidth / 2) end.rx() -= worldWidth;
             if (end.x() - pa.x() < -worldWidth / 2) end.rx() += worldWidth;
             const auto split = pa + (end - pa) * ((m_time - ta) / (tb - ta));
-            if (m_showPast) segment(past, pa, split, 1.5, true);
-            if (m_showFuture) segment(future, split, pb, 1.6);
+            if (m_showPast) segment(pastPath, pa, split, highlighted ? 1.5 : 1.25, true);
+            if (m_showFuture) segment(futurePath, split, pb, highlighted ? 2.5 : 2.0);
         }
     }
     for (const auto &entry : m_markers) {
@@ -143,8 +146,12 @@ QSGNode *OrbitLayer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
             }
         }
     }
-    append(root, coverage, QColor("#9a79b8"));
-    append(root, past, m_pastColor); append(root, future, m_futureColor);
-    append(root, markers, m_markerColor); append(root, selected, m_futureColor);
+    append(root, coverage, QColor("#509a79b8"));
+    auto pastColor = m_pastColor, futureColor = m_futureColor, markerColor = m_markerColor;
+    pastColor.setAlphaF(0.5f); futureColor.setAlphaF(0.55f); markerColor.setAlphaF(0.4f);
+    append(root, past, pastColor); append(root, future, futureColor);
+    append(root, markers, markerColor);
+    append(root, highlightedPast, m_pastColor); append(root, highlightedFuture, m_futureColor);
+    append(root, selected, m_futureColor);
     return root;
 }
