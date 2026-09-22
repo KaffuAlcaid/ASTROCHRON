@@ -88,9 +88,14 @@ ApplicationWindow {
                 anchors.rightMargin: 12
                 spacing: 12
                 Label {
-                    text: "ASTROCHRON"
+                    text: "星纪"
                     font.pixelSize: 20
                     font.bold: true
+                }
+                Label {
+                    text: "ASTROCHRON"
+                    font.pixelSize: 11
+                    color: Theme.muted
                 }
                 Item {
                     Layout.fillWidth: true
