@@ -152,6 +152,7 @@ private:
     QHash<qint64, int> m_index;
     QHash<qint64, Source> m_sources;
     QHash<QString, Source> m_groupSources;
+    QHash<QString, qint64> m_retryAfter;
     QHash<qint64, QString> m_prns, m_planes;
     QHash<QString, QSet<qint64>> m_groupMembers;
     QStringList m_watchlist;

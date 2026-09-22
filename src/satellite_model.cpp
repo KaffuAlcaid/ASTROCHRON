@@ -242,14 +242,16 @@ void SatelliteModel::refresh()
 {
     if (m_downloading || m_group == "local") return;
     const QString group = m_group == "catalog" ? QStringLiteral("active") : m_group;
-    const QString setting = "catalog/lastAttempt/" + group;
     const qint64 now = QDateTime::currentSecsSinceEpoch();
-    const auto elapsed = now - m_settings.value(setting, 0).toLongLong();
-    if (elapsed < 7200) {
-        setStatus(QStringLiteral("下次可更新：%1").arg(QDateTime::fromSecsSinceEpoch(now + 7200 - elapsed).toString("HH:mm")));
+    QSqlQuery latest(m_database);
+    latest.prepare("SELECT MAX(acquired) FROM snapshots WHERE group_key = ?");
+    latest.addBindValue(group);
+    const qint64 acquired = latest.exec() && latest.next() ? latest.value(0).toLongLong() : 0;
+    const qint64 nextRequest = std::max(acquired ? acquired + 7200 : 0, m_retryAfter.value(group));
+    if (now < nextRequest) {
+        setStatus(QStringLiteral("下次可更新：%1").arg(QDateTime::fromSecsSinceEpoch(nextRequest).toString("HH:mm:ss")));
         return;
     }
-    m_settings.setValue(setting, now);
     QUrl url("https://celestrak.org/NORAD/elements/gp.php");
     QUrlQuery parameters; parameters.addQueryItem("GROUP", group); parameters.addQueryItem("FORMAT", "json"); url.setQuery(parameters);
     QNetworkRequest request(url); request.setTransferTimeout(30000);
@@ -259,6 +261,16 @@ void SatelliteModel::refresh()
     setStatus(QStringLiteral("正在获取轨道数据"));
     connect(reply, &QNetworkReply::finished, this, [this, reply, group, url] {
         reply->deleteLater(); m_downloading = false;
+        const auto finishedAt = QDateTime::currentSecsSinceEpoch();
+        m_retryAfter[group] = finishedAt + 60;
+        const auto retryHeader = reply->rawHeader("Retry-After");
+        if (!retryHeader.isEmpty()) {
+            bool seconds = false;
+            const auto delay = retryHeader.toLongLong(&seconds);
+            const auto retryTime = seconds ? finishedAt + std::max<qint64>(delay, 0)
+                : QDateTime::fromString(QString::fromLatin1(retryHeader), Qt::RFC2822Date).toSecsSinceEpoch();
+            m_retryAfter[group] = std::max(m_retryAfter.value(group), retryTime);
+        }
         if (reply->error() != QNetworkReply::NoError) {
             const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             if (httpStatus >= 500)
@@ -275,6 +287,7 @@ void SatelliteModel::refresh()
         if (satellites.isEmpty()) { setStatus(error.isEmpty() ? QStringLiteral("数据源当前没有目标") : error); return; }
         const auto count = satellites.size();
         if (!store(payload, url.toString(), group)) return;
+        m_retryAfter.remove(group);
         install(std::move(satellites), Source{group, url.toString(), m_snapshot});
         const auto summary = QStringLiteral("目录已获取 %1 条根数").arg(count);
         setStatus(summary + (skipped ? QStringLiteral("，%1 条根数格式异常").arg(skipped) : QString()));
@@ -498,7 +511,7 @@ void SatelliteModel::closePreview()
 
 void SatelliteModel::refreshPreview()
 {
-    if (!previewActive() || !m_clock) return;
+    if (!previewActive() || !m_clock || !m_clock->hasObserver()) return;
     if (m_previewBusy) { m_previewPending = true; return; }
     QVector<Orbit::Satellite> satellites;
     const auto members = m_groupMembers.value(m_previewGroup);
@@ -579,7 +592,7 @@ void SatelliteModel::setReceiveFrequency(double value)
 
 void SatelliteModel::requestFrame()
 {
-    if (!m_clock || m_satellites.isEmpty()) return;
+    if (!m_clock || !m_clock->hasObserver() || m_satellites.isEmpty()) return;
     if (m_busy) { m_pending = true; return; }
     QVector<Orbit::Satellite> satellites;
     QSet<qint64> watchIds;

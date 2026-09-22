@@ -6,6 +6,7 @@
 #include <QStyleHints>
 #include <QLocale>
 #include <QFile>
+#include <QDataStream>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -19,6 +20,7 @@
 AppState::AppState(QObject *parent) : QObject(parent), m_reference(QDateTime::currentDateTimeUtc()), m_now(m_reference)
 {
     m_observerName = m_settings.value("observer/name", QStringLiteral("台北")).toString();
+    m_hasObserver = m_settings.contains("observer/name") && m_settings.contains("observer/latitude") && m_settings.contains("observer/longitude");
     m_latitude = m_settings.value("observer/latitude", 25.0330).toDouble();
     m_longitude = m_settings.value("observer/longitude", 121.5654).toDouble();
     m_height = m_settings.contains("observer/height") ? m_settings.value("observer/height").toDouble() : std::numeric_limits<double>::quiet_NaN();
@@ -50,19 +52,28 @@ double AppState::ellipsoidHeight() const
         int width = 0, height = 0;
         double offset = 0, scale = 1;
         Geoid() {
-            QFile file(QStringLiteral(":/geoid/egm2008-5.pgm"));
-            if (!file.open(QIODevice::ReadOnly) || file.readLine().trimmed() != "P5") return;
-            auto line = file.readLine().trimmed();
-            while (line.startsWith('#')) {
-                if (line.startsWith("# Offset ")) offset = line.mid(9).toDouble();
-                if (line.startsWith("# Scale ")) scale = line.mid(8).toDouble();
-                line = file.readLine().trimmed();
+            QFile file(QStringLiteral(":/geoid/egm2008-5.bin"));
+            if (!file.open(QIODevice::ReadOnly)) return;
+            const auto data = qUncompress(file.readAll());
+            if (!data.startsWith("AGD1") || data.size() < 28) return;
+            QDataStream stream(data);
+            stream.skipRawData(4);
+            qint32 columns = 0, rows = 0;
+            stream >> columns >> rows >> offset >> scale;
+            const qint64 count = static_cast<qint64>(columns) * rows;
+            if (stream.status() != QDataStream::Ok || columns <= 0 || rows < 2 || data.size() != 28 + count * 2) return;
+            width = columns; height = rows;
+            pixels.resize(count * 2);
+            for (int y = 0; y < height; ++y) {
+                quint16 previous = 0;
+                for (int x = 0; x < width; ++x) {
+                    const qsizetype index = static_cast<qsizetype>(y) * width + x;
+                    const quint16 delta = (static_cast<quint8>(data[28 + index]) << 8)
+                        | static_cast<quint8>(data[28 + count + index]);
+                    previous = static_cast<quint16>(previous + delta);
+                    qToBigEndian(previous, pixels.data() + index * 2);
+                }
             }
-            const auto dimensions = line.simplified().split(' ');
-            if (dimensions.size() != 2 || file.readLine().trimmed() != "65535") return;
-            width = dimensions[0].toInt(); height = dimensions[1].toInt();
-            pixels = file.readAll();
-            if (pixels.size() != width * height * 2) { width = 0; height = 0; }
         }
         double at(int x, int y) const {
             return offset + scale * qFromBigEndian<quint16>(pixels.constData() + (y * width + x % width) * 2);
@@ -94,7 +105,7 @@ void AppState::setAutomaticElevation(bool enabled)
 
 void AppState::lookupElevation()
 {
-    if (m_elevationBusy) return;
+    if (!m_hasObserver || m_elevationBusy) return;
     const auto requestId = ++m_elevationRequest;
     QUrl url(QStringLiteral("https://api.open-meteo.com/v1/elevation"));
     QUrlQuery query;
@@ -267,6 +278,7 @@ bool AppState::setObserver(const QString &name, double latitude, double longitud
         std::isinf(height) || !zone.isValid() || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
         return false;
     m_observerName = name.trimmed();
+    m_hasObserver = true;
     const bool sameHeight = latitude == m_latitude && longitude == m_longitude && height == m_height;
     ++m_elevationRequest;
     m_elevationBusy = false;

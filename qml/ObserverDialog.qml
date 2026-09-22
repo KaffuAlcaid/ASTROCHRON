@@ -10,6 +10,7 @@ Dialog {
     signal locationApplied
     title: "观测地点"
     modal: true
+    closePolicy: clock.hasObserver ? Popup.CloseOnEscape | Popup.CloseOnPressOutside : Popup.NoAutoClose
     anchors.centerIn: Overlay.overlay
     width: 490
     height: Math.min(720, Overlay.overlay ? Overlay.overlay.height - 32 : 720)
@@ -280,16 +281,19 @@ Dialog {
     footer: DialogButtonBox {
         Button {
             text: "保存为常用地点"
+            enabled: dialog.clock.hasObserver || tabs.currentIndex === 0
             DialogButtonBox.buttonRole: DialogButtonBox.ActionRole
             onClicked: if (dialog.apply())
                 dialog.clock.saveObserver()
         }
         Button {
             text: "关闭"
+            visible: dialog.clock.hasObserver
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
         }
         Button {
             text: "确定"
+            enabled: dialog.clock.hasObserver || tabs.currentIndex === 0
             DialogButtonBox.buttonRole: DialogButtonBox.ActionRole
             onClicked: if (dialog.apply())
                 dialog.close()

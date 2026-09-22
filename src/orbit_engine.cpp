@@ -114,7 +114,7 @@ std::optional<Satellite> fromTle(const QString &name, const QString &first, cons
     std::copy(bytes2.begin(), bytes2.end(), line2);
     elsetrec record{};
     double start = 0, end = 0, step = 0;
-    SGP4Funcs::twoline2rv(line1, line2, 'c', 'm', 'i', wgs84, start, end, step, record);
+    SGP4Funcs::twoline2rv(line1, line2, 'c', 'm', 'i', wgs72, start, end, step, record);
     if (record.error != 0) { error = QStringLiteral("轨道根数初始化失败（%1）").arg(record.error); return std::nullopt; }
     QString international;
     const auto designator = first.mid(9, 8).trimmed();
@@ -175,7 +175,7 @@ std::optional<Satellite> fromOmm(const QJsonObject &object, QString &error)
         return std::nullopt;
     }
     // The upstream identifier buffer is five characters; full catalog IDs stay in our data model.
-    const bool initialized = SGP4Funcs::sgp4init(wgs84, 'i', "00000", satellite.epoch / 86400.0 + 7306.0,
+    const bool initialized = SGP4Funcs::sgp4init(wgs72, 'i', "00000", satellite.epoch / 86400.0 + 7306.0,
         object.value("BSTAR").toDouble(), object.value("MEAN_MOTION_DOT").toDouble() * pi / 1036800.0,
         object.value("MEAN_MOTION_DDOT").toDouble() * pi / 1492992000.0, eccentricity,
         object.value("ARG_OF_PERICENTER").toDouble() * rad, inclination * rad,

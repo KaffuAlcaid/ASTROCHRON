@@ -41,7 +41,7 @@ void WeatherModel::setClock(AppState *clock)
 
 void WeatherModel::updateLocation()
 {
-    if (!m_clock) return;
+    if (!m_clock || !m_clock->hasObserver()) return;
     const bool changed = m_latitude != m_clock->observerLatitude() || m_longitude != m_clock->observerLongitude();
     if (changed) {
         ++m_request; m_busy = false;
@@ -94,7 +94,7 @@ QVariantMap WeatherModel::forecast() const
 
 void WeatherModel::refresh()
 {
-    if (!m_enabled || m_busy || !m_clock) return;
+    if (!m_enabled || m_busy || !m_clock || !m_clock->hasObserver()) return;
     m_locationTimer.stop();
     const auto request = ++m_request;
     QUrl url(QStringLiteral("https://api.open-meteo.com/v1/forecast"));

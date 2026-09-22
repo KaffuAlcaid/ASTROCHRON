@@ -137,7 +137,7 @@ ApplicationWindow {
                 anchors.rightMargin: 12
                 spacing: 12
                 Label {
-                    text: "观测地点：" + appState.observerName
+                    text: appState.hasObserver ? "观测地点：" + appState.observerName : "观测地点：待选择"
                     font.bold: true
                     font.pixelSize: 12
                     Layout.maximumWidth: 180
@@ -152,20 +152,21 @@ ApplicationWindow {
                     onClicked: observerDialog.openCities()
                 }
                 Label {
-                    visible: window.width >= 1040
+                    visible: appState.hasObserver && window.width >= 1040
                     text: (appState.observerLatitude >= 0 ? "北纬 " : "南纬 ") + Math.abs(appState.observerLatitude).toFixed(4) + "°"
                     font.family: Theme.numberFont
                     font.pixelSize: 12
                     color: Theme.muted
                 }
                 Label {
-                    visible: window.width >= 1040
+                    visible: appState.hasObserver && window.width >= 1040
                     text: (appState.observerLongitude >= 0 ? "东经 " : "西经 ") + Math.abs(appState.observerLongitude).toFixed(4) + "°"
                     font.family: Theme.numberFont
                     font.pixelSize: 12
                     color: Theme.muted
                 }
                 Label {
+                    visible: appState.hasObserver
                     text: appState.hasObserverHeight ? "海拔 " + appState.observerHeight.toFixed(0) + " m" : appState.elevationBusy ? "正在查询海拔" : "海拔待填写"
                     font.pixelSize: 12
                     color: Theme.muted
@@ -310,4 +311,6 @@ ApplicationWindow {
         enabled: window.expanded
         onActivated: window.expanded = false
     }
+    Component.onCompleted: if (!appState.hasObserver)
+        Qt.callLater(function() { observerDialog.openCities(); })
 }

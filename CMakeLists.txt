@@ -37,6 +37,13 @@ if(MSVC)
     target_compile_options(sgp4 PRIVATE /utf-8)
 endif()
 set_target_properties(astrochron PROPERTIES OUTPUT_NAME ASTROCHRON)
+if(WIN32)
+    enable_language(RC)
+    set(app_icon_rc "${CMAKE_CURRENT_BINARY_DIR}/astrochron.rc")
+    file(GENERATE OUTPUT "${app_icon_rc}" CONTENT "#pragma code_page(65001)\nIDI_ICON1 ICON \"${CMAKE_CURRENT_SOURCE_DIR}/assets/app-icon/astrochron.ico\"\n")
+    set_source_files_properties("${app_icon_rc}" PROPERTIES OBJECT_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/assets/app-icon/astrochron.ico")
+    target_sources(astrochron PRIVATE "${app_icon_rc}")
+endif()
 set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(astrochron
     URI Astrochron
@@ -61,7 +68,7 @@ qt_add_qml_module(astrochron
 target_include_directories(astrochron PRIVATE src)
 target_link_libraries(astrochron PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Sql astronomy_engine sgp4)
 if(MSVC)
-    target_compile_options(astrochron PRIVATE /utf-8 /W4)
+    target_compile_options(astrochron PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/utf-8> $<$<COMPILE_LANGUAGE:CXX>:/W4>)
 endif()
 
 qt_add_resources(astrochron world_map_data
@@ -69,10 +76,17 @@ qt_add_resources(astrochron world_map_data
     BASE "${CMAKE_CURRENT_BINARY_DIR}/generated"
     FILES "${map_resource}"
 )
+set(geoid_resource "${CMAKE_CURRENT_BINARY_DIR}/generated/egm2008-5.bin")
+add_custom_command(
+    OUTPUT "${geoid_resource}"
+    COMMAND "${NODE_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/prepare-geoid.mjs" "${geoid_resource}"
+    DEPENDS tools/prepare-geoid.mjs assets/geoid/egm2008-5.pgm
+    VERBATIM
+)
 qt_add_resources(astrochron geoid_data
     PREFIX /geoid
-    BASE assets/geoid
-    FILES assets/geoid/egm2008-5.pgm
+    BASE "${CMAKE_CURRENT_BINARY_DIR}/generated"
+    FILES "${geoid_resource}"
 )
 qt_add_resources(astrochron photometry_data
     PREFIX /photometry
@@ -90,6 +104,11 @@ qt_add_resources(astrochron icons
         assets/icons/copy.svg assets/icons/crosshair.svg
         assets/icons/info.svg
         assets/icons/x.svg assets/icons/chevron-down.svg assets/icons/chevron-right.svg
+)
+qt_add_resources(astrochron app_icon
+    PREFIX /app
+    BASE assets/app-icon
+    FILES assets/app-icon/astrochron.ico
 )
 qt_add_shaders(astrochron daynight_shader
     PREFIX /

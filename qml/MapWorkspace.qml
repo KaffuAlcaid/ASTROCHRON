@@ -99,7 +99,7 @@ ColumnLayout {
                 showBorders: layers.borders
                 showGrid: layers.grid
                 showCities: layers.cities
-                showStation: layers.station
+                showStation: layers.station && workspace.clock.hasObserver
                 observerLongitude: workspace.clock.observerLongitude
                 observerLatitude: workspace.clock.observerLatitude
                 landColor: Theme.land
@@ -187,7 +187,7 @@ ColumnLayout {
             }
             Rectangle {
                 z: 3
-                visible: layers.station
+                visible: layers.station && workspace.clock.hasObserver
                 x: worldMap.observerPosition.x - width / 2
                 y: worldMap.observerPosition.y - height / 2
                 width: 8

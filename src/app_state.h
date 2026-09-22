@@ -21,6 +21,7 @@ class AppState : public QObject {
     Q_PROPERTY(bool live READ live NOTIFY timeChanged)
     Q_PROPERTY(QVector3D sunDirection READ sunDirection NOTIFY timeChanged)
     Q_PROPERTY(QString observerName READ observerName NOTIFY observerChanged)
+    Q_PROPERTY(bool hasObserver READ hasObserver NOTIFY observerChanged)
     Q_PROPERTY(double observerLatitude READ observerLatitude NOTIFY observerChanged)
     Q_PROPERTY(double observerLongitude READ observerLongitude NOTIFY observerChanged)
     Q_PROPERTY(double observerHeight READ observerHeight NOTIFY observerChanged)
@@ -50,6 +51,7 @@ public:
     bool live() const { return m_live; }
     QVector3D sunDirection() const { return m_sun; }
     QString observerName() const { return m_observerName; }
+    bool hasObserver() const { return m_hasObserver; }
     double observerLatitude() const { return m_latitude; }
     double observerLongitude() const { return m_longitude; }
     double observerHeight() const { return m_height; }
@@ -101,6 +103,7 @@ private:
     QTimeZone m_timeZone;
     QVector3D m_sun;
     QString m_observerName;
+    bool m_hasObserver = false;
     double m_latitude;
     double m_longitude;
     double m_height;

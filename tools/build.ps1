@@ -44,18 +44,39 @@ if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 
 if ($Deploy) {
-    $destination = Join-Path $projectRoot '.cache/dist/ASTROCHRON'
+    $destination = Join-Path $projectRoot ('.cache/dist/ASTROCHRON-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+    if (Test-Path -LiteralPath $destination) { throw 'Deployment directory already exists.' }
     & cmake --install $buildDirectory --prefix $destination
     if ($LASTEXITCODE -ne 0) { throw 'Application installation failed.' }
     $deploymentMode = if ($Configuration -eq 'Debug') { '--debug' } else { '--release' }
     $runtimeDirectory = Join-Path $toolchainRoot 'msvc-runtime/x64'
-    $deploymentArguments = @($deploymentMode, '--verbose', '0', '--qmldir', (Join-Path $projectRoot 'qml'))
+    $deploymentArguments = @($deploymentMode, '--verbose', '0', '--qmldir', (Join-Path $projectRoot 'qml'),
+        '--translations', 'zh_CN', '--no-system-dxc-compiler', '--skip-plugin-types', 'qmltooling,generic',
+        '--exclude-plugins', 'qsqlibase,qsqlmimer,qsqloci,qsqlodbc,qsqlpsql')
     if ($Configuration -eq 'Release' -and (Test-Path -LiteralPath $runtimeDirectory)) {
         $deploymentArguments += '--no-compiler-runtime'
     }
     $deploymentArguments += (Join-Path $destination 'ASTROCHRON.exe')
     & (Join-Path $QtRoot 'bin/windeployqt.exe') @deploymentArguments
     if ($LASTEXITCODE -ne 0) { throw 'Qt deployment failed.' }
+    # The application fixes Qt Quick Controls to Basic; other styles are never selected.
+    $unused = foreach ($style in @('FluentWinUI3', 'Fusion', 'Imagine', 'Material', 'Universal', 'Windows')) {
+        "qml/QtQuick/Controls/$style"
+        "qml/QtQuick/Dialogs/quickimpl/qml/+$style"
+        "Qt6QuickControls2$style.dll"
+        "Qt6QuickControls2${style}StyleImpl.dll"
+    }
+    $destinationRoot = [IO.Path]::GetFullPath($destination) + [IO.Path]::DirectorySeparatorChar
+    foreach ($relativePath in $unused) {
+        $path = [IO.Path]::GetFullPath((Join-Path $destination $relativePath))
+        if (!$path.StartsWith($destinationRoot, [StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid deployment path.' }
+        if (Test-Path -LiteralPath $path) {
+            $item = Get-Item -LiteralPath $path
+            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Unexpected deployment link.' }
+            Remove-Item -LiteralPath $path -Recurse -Force
+        }
+    }
+    Get-ChildItem -LiteralPath (Join-Path $destination 'qml') -Recurse -File -Filter '*.qmltypes' | Remove-Item -Force
     if ($Configuration -eq 'Release' -and (Test-Path -LiteralPath $runtimeDirectory)) {
         Get-ChildItem -LiteralPath $runtimeDirectory -Filter '*.dll' | Copy-Item -Destination $destination
     }

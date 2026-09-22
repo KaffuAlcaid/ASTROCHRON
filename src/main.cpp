@@ -1,4 +1,5 @@
 #include <QGuiApplication>
+#include <QIcon>
 #include <QLibraryInfo>
 #include <QLocale>
 #include <QQmlApplicationEngine>
@@ -12,6 +13,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(QStringLiteral("ASTROCHRON"));
     QCoreApplication::setApplicationName(QStringLiteral("ASTROCHRON"));
     QGuiApplication::setApplicationDisplayName(QStringLiteral("星纪"));
+    app.setWindowIcon(QIcon(QStringLiteral(":/app/astrochron.ico")));
     QLocale::setDefault(QLocale(QLocale::Chinese, QLocale::China));
     QQuickStyle::setStyle(QStringLiteral("Basic"));
     QTranslator translations;
