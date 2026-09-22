@@ -106,13 +106,13 @@ QVariantList SatelliteModel::groups() const
 {
     QVariantList result;
     const std::pair<const char *, const char *> groups[] = {
-        {"active", "全部活动卫星"}, {"stations", "空间站"}, {"visual", "明亮目标"},
+        {"catalog", "本地完整目录"}, {"active", "活动卫星（CelesTrak）"}, {"stations", "空间站"}, {"visual", "明亮目标"},
         {"weather", "气象卫星"}, {"noaa", "美国气象卫星"}, {"goes", "地球静止气象卫星"},
         {"resource", "地球资源卫星"}, {"sarsat", "搜救卫星"}, {"dmc", "灾害监测卫星"},
         {"starlink", "星链"}, {"oneweb", "一网"}, {"iridium-NEXT", "铱星二代"},
         {"qianfan", "千帆"}, {"hulianwang", "互联网低轨"}, {"kuiper", "柯伊伯"}, {"sar", "合成孔径雷达"},
         {"intelsat", "国际通信卫星"}, {"geo", "地球同步卫星"}, {"amateur", "业余无线电卫星"},
-        {"gnss", "全球导航卫星"}, {"gps-ops", "全球定位系统"}, {"glo-ops", "格洛纳斯"},
+        {"gnss", "全球导航卫星"}, {"gps-ops", "GPS 运行组"}, {"glo-ops", "GLONASS 运行组"},
         {"galileo", "伽利略"}, {"beidou", "北斗"}, {"science", "科学卫星"},
         {"engineering", "技术试验卫星"}, {"education", "教育卫星"}, {"cubesat", "立方星"},
         {"radar", "雷达标定卫星"}, {"other", "其他卫星"}, {"last-30-days", "最近发射"}
@@ -120,6 +120,18 @@ QVariantList SatelliteModel::groups() const
     for (const auto &[key, name] : groups) result.append(QVariantMap{{"key", QString::fromLatin1(key)}, {"name", QString::fromUtf8(name)}});
     result.append(QVariantMap{{"key", "local"}, {"name", QStringLiteral("本地轨道文件")}});
     return result;
+}
+
+QVariantMap SatelliteModel::groupInfo() const
+{
+    if (m_group == "catalog") return {{"description", QStringLiteral("各来源按卫星编号合并，空间站组合体合并显示")}};
+    const auto source = m_groupSources.value(m_group);
+    const bool operational = m_group == "gps-ops" || m_group == "glo-ops";
+    return {{"description", operational ? QStringLiteral("运行组采用 CelesTrak 分组，实时导航健康状态以系统公告为准")
+                                        : m_group == "local" ? QStringLiteral("所选本地轨道文件中的对象") : QStringLiteral("CelesTrak 所选分组中的对象")},
+        {"acquired", source.acquired ? QDateTime::fromSecsSinceEpoch(source.acquired, QTimeZone::UTC).toString("yyyy-MM-dd HH:mm:ss 'UTC'") : QString()},
+        {"source", source.url}, {"loaded", m_groupMembers.contains(m_group)},
+        {"count", static_cast<int>(m_groupMembers.value(m_group).size())}};
 }
 
 void SatelliteModel::setClock(AppState *clock)
@@ -184,6 +196,7 @@ void SatelliteModel::setGroup(const QString &group)
     if (!known) return;
     m_group = group;
     m_settings.setValue("catalog/group", group);
+    if (group == "catalog") { emit catalogChanged(); return; }
     QSqlQuery query(m_database);
     query.prepare("SELECT id FROM snapshots WHERE group_key = ? ORDER BY id DESC LIMIT 1");
     query.addBindValue(group);
@@ -199,7 +212,7 @@ void SatelliteModel::setStatus(const QString &value) { m_status = value; emit st
 void SatelliteModel::refresh()
 {
     if (m_downloading || m_group == "local") return;
-    const QString group = m_group;
+    const QString group = m_group == "catalog" ? QStringLiteral("active") : m_group;
     const QString setting = "catalog/lastAttempt/" + group;
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     const auto elapsed = now - m_settings.value(setting, 0).toLongLong();
@@ -294,8 +307,13 @@ void SatelliteModel::loadSnapshot(qint64 id)
 qint64 SatelliteModel::snapshotId() const { return m_sources.value(m_selected).snapshot; }
 QString SatelliteModel::sourceText() const { return m_sources.value(m_selected).url; }
 
-void SatelliteModel::install(QVector<Orbit::Satellite> satellites, const Source &source)
+void SatelliteModel::install(QVector<Orbit::Satellite> satellites, Source source)
 {
+    QSqlQuery query(m_database);
+    query.prepare("SELECT acquired FROM snapshots WHERE id = ?");
+    query.addBindValue(source.snapshot);
+    if (query.exec() && query.next()) source.acquired = query.value(0).toLongLong();
+    m_groupSources.insert(source.group, source);
     beginResetModel(); m_rows.clear();
     QSet<qint64> sourceMembers;
     static const QRegularExpression prnPattern(QStringLiteral("PRN\\s*([A-Z]?\\d+)"), QRegularExpression::CaseInsensitiveOption);

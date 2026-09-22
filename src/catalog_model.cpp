@@ -84,9 +84,17 @@ void CatalogModel::revealGroup(const QString &key)
 QVariantList CatalogModel::navigationGroups() const
 {
     QVariantList result;
-    for (const auto *key : {"gps-ops", "glo-ops", "galileo", "beidou"})
-        result.append(QVariantMap{{"key", QString::fromLatin1(key)}, {"name", constellationName(QLatin1String(key))},
-            {"count", m_source && m_source->m_groupMembers.contains(QLatin1String(key)) ? static_cast<int>(m_source->m_groupMembers.value(QLatin1String(key)).size()) : m_counts.value(QLatin1String(key))}});
+    for (const auto *key : {"gps-ops", "glo-ops", "galileo", "beidou"}) {
+        const auto group = QString::fromLatin1(key);
+        const auto source = m_source ? m_source->m_groupSources.value(group) : SatelliteModel::Source{};
+        result.append(QVariantMap{{"key", group}, {"name", constellationName(group)},
+            {"catalogCount", m_counts.value(group)},
+            {"groupCount", m_source ? static_cast<int>(m_source->m_groupMembers.value(group).size()) : 0},
+            {"loaded", m_source && m_source->m_groupMembers.contains(group)},
+            {"scope", group.endsWith("-ops") ? QStringLiteral("运行组") : QStringLiteral("来源组")},
+            {"acquired", source.acquired ? QDateTime::fromSecsSinceEpoch(source.acquired, QTimeZone::UTC).toString("yyyy-MM-dd HH:mm:ss 'UTC'") : QString()},
+            {"source", source.url}});
+    }
     return result;
 }
 void CatalogModel::rebuild()
@@ -99,8 +107,8 @@ void CatalogModel::rebuild()
             const auto &satellite = m_source->m_satellites[index];
             const auto key = constellation(satellite);
             ++m_counts[key];
-            if (m_source->m_group != "active") {
-                bool inSource = !m_source->m_groupMembers.contains(m_source->m_group) && key == m_source->m_group;
+            if (m_source->m_group != "catalog") {
+                bool inSource = false;
                 const auto members = m_source->m_groupMembers.value(m_source->m_group);
                 for (const int member : m_source->m_members.value(satellite.number))
                     if (members.contains(m_source->m_satellites[member].number)) inSource = true;

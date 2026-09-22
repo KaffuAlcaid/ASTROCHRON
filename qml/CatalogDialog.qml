@@ -22,7 +22,7 @@ Dialog {
         return 0;
     }
     function openAll() {
-        satellites.group = "active";
+        satellites.group = "catalog";
         catalog.search = "";
         open();
     }
@@ -46,7 +46,7 @@ Dialog {
             }
             IconButton {
                 icon.source: "qrc:/icons/refresh-cw.svg"
-                tip: "更新目录分组"
+                tip: dialog.satellites.group === "catalog" ? "更新活动卫星来源" : "更新目录分组"
                 enabled: !dialog.satellites.downloading && dialog.satellites.group !== "local"
                 onClicked: dialog.satellites.refresh()
             }
@@ -71,6 +71,32 @@ Dialog {
                 selectByMouse: true
                 onTextEdited: dialog.catalog.search = text
             }
+        }
+        Label {
+            text: dialog.satellites.groupInfo.description || ""
+            color: Theme.muted
+            font.pixelSize: 12
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
+        Label {
+            visible: dialog.satellites.group !== "catalog"
+            text: dialog.satellites.groupInfo.loaded ? "来源记录 " + dialog.satellites.groupInfo.count + " · 获取时间 " + dialog.satellites.groupInfo.acquired : "分组资料待获取"
+            color: Theme.muted
+            font.pixelSize: 11
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
+        Label {
+            visible: dialog.satellites.groupInfo.source !== undefined && dialog.satellites.groupInfo.source !== ""
+            text: dialog.satellites.groupInfo.source || ""
+            color: Theme.muted
+            font.pixelSize: 11
+            Layout.fillWidth: true
+            elide: Text.ElideMiddle
+            ToolTip.visible: sourceHover.hovered
+            ToolTip.text: text
+            HoverHandler { id: sourceHover }
         }
         RowLayout {
             Layout.leftMargin: 28
@@ -152,7 +178,7 @@ Dialog {
                     }
                     Label {
                         visible: entry.isGroup
-                        text: entry.memberCount + " 个"
+                        text: (dialog.catalog.search.trim().length ? "匹配 " : dialog.satellites.group === "catalog" ? "目录 " : "组内 ") + entry.memberCount
                         color: Theme.muted
                         font.family: Theme.numberFont
                         font.pixelSize: 13

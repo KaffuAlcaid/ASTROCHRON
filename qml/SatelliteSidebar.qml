@@ -161,23 +161,27 @@ Rectangle {
             ItemDelegate {
                 required property var modelData
                 Layout.fillWidth: true
-                implicitHeight: 38
+                implicitHeight: 56
                 contentItem: RowLayout {
-                    Label {
-                        text: modelData.name
-                        font.pixelSize: 13
+                    ColumnLayout {
                         Layout.fillWidth: true
-                    }
-                    Label {
-                        text: modelData.count > 0 ? modelData.count : "待获取"
-                        font.family: Theme.numberFont
-                        font.pixelSize: 12
-                        color: Theme.muted
+                        spacing: 3
+                        Label {
+                            text: modelData.name
+                            font.pixelSize: 13
+                        }
+                        Label {
+                            text: "目录 " + modelData.catalogCount + " · " + modelData.scope + " " + (modelData.loaded ? modelData.groupCount : "待获取")
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                            font.pixelSize: 11
+                            color: Theme.muted
+                        }
                     }
                     IconButton {
                         icon.source: "qrc:/icons/crosshair.svg"
                         tip: "预览 " + modelData.name
-                        enabled: modelData.count > 0
+                        enabled: modelData.catalogCount > 0
                         onClicked: sidebar.satellites.previewConstellation(modelData.key)
                     }
                     IconButton {
@@ -186,6 +190,9 @@ Rectangle {
                         onClicked: sidebar.groupRequested(modelData.key)
                     }
                 }
+                ToolTip.visible: hovered
+                ToolTip.delay: 500
+                ToolTip.text: modelData.loaded ? "CelesTrak · " + modelData.key + "\n获取时间 " + modelData.acquired : "目录按本地轨道对象统计"
                 onClicked: sidebar.groupRequested(modelData.key)
             }
         }

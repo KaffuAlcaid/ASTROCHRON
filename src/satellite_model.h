@@ -17,6 +17,7 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(AppState *clock READ clock WRITE setClock NOTIFY clockChanged)
     Q_PROPERTY(QString search READ search WRITE setSearch NOTIFY watchlistChanged)
     Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY catalogChanged)
+    Q_PROPERTY(QVariantMap groupInfo READ groupInfo NOTIFY catalogChanged)
     Q_PROPERTY(QVariantList groups READ groups CONSTANT)
     Q_PROPERTY(QString selectedId READ selectedId WRITE select NOTIFY selectionChanged)
     Q_PROPERTY(QVariantMap observation READ observation NOTIFY frameChanged)
@@ -59,6 +60,7 @@ public:
     QString group() const { return m_group; }
     void setGroup(const QString &group);
     QVariantList groups() const;
+    QVariantMap groupInfo() const;
     QString selectedId() const { return QString::number(m_selected); }
     Q_INVOKABLE void select(const QString &id);
     QVariantMap observation() const { return m_observation; }
@@ -113,11 +115,11 @@ signals:
 
 private:
     friend class CatalogModel;
-    struct Source { QString group; QString url; qint64 snapshot = 0; };
+    struct Source { QString group; QString url; qint64 snapshot = 0; qint64 acquired = 0; };
     void filter();
     void requestFrame();
     void invalidate();
-    void install(QVector<Orbit::Satellite> satellites, const Source &source);
+    void install(QVector<Orbit::Satellite> satellites, Source source);
     void refreshPreview();
     bool store(const QByteArray &payload, const QString &source, const QString &group);
     void setStatus(const QString &status);
@@ -130,6 +132,7 @@ private:
     QVector<Orbit::Satellite> m_satellites;
     QHash<qint64, int> m_index;
     QHash<qint64, Source> m_sources;
+    QHash<QString, Source> m_groupSources;
     QHash<qint64, QString> m_prns, m_planes;
     QHash<QString, QSet<qint64>> m_groupMembers;
     QStringList m_watchlist;
@@ -140,7 +143,7 @@ private:
     QHash<qint64, QVector<int>> m_members;
     QVector<int> m_rows;
     QHash<qint64, double> m_elevations;
-    QString m_search, m_group = QStringLiteral("active"), m_source, m_status;
+    QString m_search, m_group = QStringLiteral("catalog"), m_source, m_status;
     qint64 m_selected = 0, m_snapshot = 0;
     quint64 m_revision = 0;
     double m_trackReference = 0;
