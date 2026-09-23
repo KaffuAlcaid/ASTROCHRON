@@ -1772,6 +1772,26 @@ Acquired </translation>
             <source>天气查询向 Open-Meteo 发送观测地点坐标。</source>
             <translation>Weather queries send observer coordinates to Open-Meteo</translation>
         </message>
+        <message>
+            <source>软件更新</source>
+            <translation>Software updates</translation>
+        </message>
+        <message>
+            <source>当前版本：%1</source>
+            <translation>Current version: %1</translation>
+        </message>
+        <message>
+            <source>接收预发布版本</source>
+            <translation>Include pre-release versions</translation>
+        </message>
+        <message>
+            <source>检查更新</source>
+            <translation>Check for updates</translation>
+        </message>
+        <message>
+            <source>打开发布页</source>
+            <translation>Open release page</translation>
+        </message>
     </context>
     <context>
         <name>SkyPlot</name>
@@ -1815,6 +1835,41 @@ Peak </translation>
         <message>
             <source>回到现在</source>
             <translation>Back to now</translation>
+        </message>
+    </context>
+    <context>
+        <name>UpdateChecker</name>
+        <message>
+            <source>正在检查更新</source>
+            <translation>Checking for updates</translation>
+        </message>
+        <message>
+            <source>当前已是最新版本</source>
+            <translation>You are up to date</translation>
+        </message>
+        <message>
+            <source>发现版本 %1</source>
+            <translation>Version %1 is available</translation>
+        </message>
+        <message>
+            <source>暂无符合条件的发布版本</source>
+            <translation>No releases match this selection</translation>
+        </message>
+        <message>
+            <source>GitHub 暂时限制了请求，请稍后再检查</source>
+            <translation>GitHub is limiting requests; try again later</translation>
+        </message>
+        <message>
+            <source>更新检查失败（HTTP %1）</source>
+            <translation>Update check failed (HTTP %1)</translation>
+        </message>
+        <message>
+            <source>更新信息格式无效</source>
+            <translation>Invalid update information</translation>
+        </message>
+        <message>
+            <source>更新检查失败：%1</source>
+            <translation>Update check failed: %1</translation>
         </message>
     </context>
     <context>

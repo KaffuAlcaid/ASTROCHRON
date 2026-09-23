@@ -12,6 +12,11 @@ Dialog {
     anchors.centerIn: Overlay.overlay
     width: 430
     standardButtons: Dialog.Close
+    UpdateChecker { id: updates }
+    Connections {
+        target: dialog.clock
+        function onLocalizedChanged() { updates.retranslate(); }
+    }
     contentItem: ColumnLayout {
         spacing: 16
         LanguageSettings {
@@ -46,6 +51,55 @@ Dialog {
             wrapMode: Text.Wrap
             font.pixelSize: 12
             color: Theme.muted
+        }
+        Label {
+            text: qsTr("软件更新")
+            font.bold: true
+            Layout.topMargin: 8
+        }
+        Label {
+            text: qsTr("当前版本：%1").arg(updates.currentVersion)
+            color: Theme.muted
+        }
+        CheckBox {
+            text: qsTr("接收预发布版本")
+            checked: updates.includePrereleases
+            onToggled: updates.includePrereleases = checked
+        }
+        RowLayout {
+            Button {
+                text: qsTr("检查更新")
+                icon.source: "qrc:/icons/refresh-cw.svg"
+                icon.color: Theme.text
+                enabled: !updates.busy
+                onClicked: updates.check()
+            }
+            Button {
+                text: qsTr("打开发布页")
+                icon.source: "qrc:/icons/download.svg"
+                icon.color: Theme.text
+                onClicked: Qt.openUrlExternally(updates.releaseUrl)
+            }
+        }
+        Label {
+            text: updates.status
+            visible: text.length > 0
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            color: updates.available ? Theme.accent : Theme.muted
+        }
+        ScrollView {
+            visible: updates.available && updates.releaseNotes.length > 0
+            Layout.fillWidth: true
+            Layout.preferredHeight: 140
+            contentWidth: availableWidth
+            TextArea {
+                text: updates.releaseNotes
+                textFormat: TextEdit.PlainText
+                readOnly: true
+                selectByMouse: true
+                wrapMode: TextEdit.Wrap
+            }
         }
     }
 }

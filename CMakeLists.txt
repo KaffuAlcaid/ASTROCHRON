@@ -66,6 +66,7 @@ qt_add_qml_module(astrochron
         src/weather_model.h src/weather_model.cpp
         src/catalog_model.h src/catalog_model.cpp
         src/orbit_layer.h src/orbit_layer.cpp
+        src/update_checker.h src/update_checker.cpp
 )
 target_include_directories(astrochron PRIVATE src)
 qt_add_translations(astrochron
