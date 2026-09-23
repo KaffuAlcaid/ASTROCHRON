@@ -9,6 +9,8 @@
 #include <QUrl>
 #include <QSet>
 #include <functional>
+#include <atomic>
+#include <memory>
 
 class CatalogModel;
 
@@ -61,11 +63,12 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(QString storageStatus READ storageStatus NOTIFY storageChanged)
     Q_PROPERTY(bool snapshotPinned READ snapshotPinned NOTIFY sourceChanged)
     Q_PROPERTY(bool snapshotImported READ snapshotImported NOTIFY sourceChanged)
+    Q_PROPERTY(int watchOrder READ watchOrder WRITE setWatchOrder NOTIFY watchlistChanged)
 
 public:
     explicit SatelliteModel(QObject *parent = nullptr);
     ~SatelliteModel() override;
-    enum Role { IdRole = Qt::UserRole + 1, NameRole, OriginalRole, ElevationRole };
+    enum Role { IdRole = Qt::UserRole + 1, NameRole, OriginalRole, ElevationRole, PredictionRole };
     int rowCount(const QModelIndex &parent = {}) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
@@ -141,6 +144,8 @@ public:
     Q_INVOKABLE void disableCleanup();
     Q_INVOKABLE void compactDatabase(bool full = true);
     Q_INVOKABLE void refreshStorage() { emit storageChanged(); }
+    int watchOrder() const { return m_watchOrder; }
+    void setWatchOrder(int order);
 
 signals:
     void clockChanged();
@@ -177,6 +182,10 @@ private:
     bool store(const QByteArray &payload, const QString &source, const QString &group);
     bool initializeDatabase();
     bool pruneSnapshots();
+    void requestWatchPredictions();
+    void calculateWatchPredictions();
+    void updateWatchRows();
+    void sortWatchRows();
     void setStatus(std::function<QString()> status);
     const Orbit::Satellite *selected() const;
     AppState *m_clock = nullptr;
@@ -238,4 +247,16 @@ private:
     int m_snapshotRetention = 10;
     bool m_autoCleanup = false, m_storageBusy = false;
     std::function<QString()> m_storageStatus;
+    struct WatchPrediction { Orbit::Satellite satellite; QVector<Orbit::Pass> passes; };
+    QHash<qint64, WatchPrediction> m_watchPredictions;
+    QHash<qint64, QString> m_watchSummaries;
+    QHash<qint64, double> m_watchNextTimes;
+    Orbit::Observer m_watchObserver;
+    QTimer m_watchTimer;
+    std::shared_ptr<std::atomic_bool> m_watchCancel;
+    quint64 m_watchGeneration = 0;
+    qint64 m_watchDay = -1, m_watchRequestedDay = -1;
+    double m_watchClockTime = 0, m_watchNextBoundary = 0;
+    bool m_watchBusy = false;
+    int m_watchOrder = 0;
 };

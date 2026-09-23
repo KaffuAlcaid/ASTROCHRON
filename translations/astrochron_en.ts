@@ -1304,6 +1304,14 @@ Range at peak </translation>
             <translation>Pending</translation>
         </message>
         <message>
+            <source>预报计算中</source>
+            <translation>Calculating passes</translation>
+        </message>
+        <message>
+            <source>请选择观测地点</source>
+            <translation>Choose an observer location</translation>
+        </message>
+        <message>
             <source>本地完整目录</source>
             <translation>Complete local catalog</translation>
         </message>
@@ -1454,6 +1462,30 @@ Range at peak </translation>
         <message>
             <source>CelesTrak 所选分组中的对象</source>
             <translation>Objects in the selected CelesTrak group</translation>
+        </message>
+        <message>
+            <source>24 h 内暂无过境</source>
+            <translation>No passes in 24 h</translation>
+        </message>
+        <message>
+            <source>持续高于最低高度角</source>
+            <translation>Continuously above the elevation limit</translation>
+        </message>
+        <message>
+            <source>正在过境</source>
+            <translation>Pass in progress</translation>
+        </message>
+        <message>
+            <source>下一次 %1</source>
+            <translation>Next %1</translation>
+        </message>
+        <message>
+            <source> · 峰值 %1°</source>
+            <translation> · Peak %1°</translation>
+        </message>
+        <message>
+            <source> · 光学</source>
+            <translation> · Optical</translation>
         </message>
         <message>
             <source>请选择轨道文件</source>
@@ -1977,6 +2009,18 @@ Range at peak </translation>
         <message>
             <source>高度角</source>
             <translation>Elevation</translation>
+        </message>
+        <message>
+            <source>清单顺序</source>
+            <translation>Watchlist order</translation>
+        </message>
+        <message>
+            <source>下一次过境</source>
+            <translation>Next pass</translation>
+        </message>
+        <message>
+            <source>观测清单排序</source>
+            <translation>Watchlist sorting</translation>
         </message>
         <message>
             <source>移出观测清单</source>

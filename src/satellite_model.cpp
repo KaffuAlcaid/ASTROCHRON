@@ -19,6 +19,7 @@
 #include <QUuid>
 #include <cmath>
 #include <algorithm>
+#include <limits>
 
 namespace {
 QString formatTime(double seconds, const QTimeZone &zone, const char *format = "MM-dd HH:mm:ss")
@@ -76,6 +77,9 @@ SatelliteModel::SatelliteModel(QObject *parent) : QAbstractListModel(parent)
     m_pool.setMaxThreadCount(2);
     m_watchlist = m_settings.value("watchlist/ids", QStringList{"25544", "48274"}).toStringList();
     m_watchlist.removeDuplicates();
+    m_watchOrder = m_settings.value("watchlist/order", 0).toInt() == 1 ? 1 : 0;
+    m_watchTimer.setSingleShot(true); m_watchTimer.setInterval(100);
+    connect(&m_watchTimer, &QTimer::timeout, this, &SatelliteModel::calculateWatchPredictions);
     m_frequency = m_settings.value("radio/frequencyMHz", 145.8).toDouble();
     const auto directory = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
     QDir().mkpath(directory);
@@ -92,6 +96,7 @@ SatelliteModel::SatelliteModel(QObject *parent) : QAbstractListModel(parent)
 
 SatelliteModel::~SatelliteModel()
 {
+    if (m_watchCancel) m_watchCancel->store(true);
     m_pool.clear();
     m_pool.waitForDone();
     const auto name = m_database.connectionName();
@@ -305,7 +310,7 @@ void SatelliteModel::compactDatabase(bool full)
 int SatelliteModel::rowCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : static_cast<int>(m_rows.size()); }
 QHash<int, QByteArray> SatelliteModel::roleNames() const
 {
-    return {{IdRole, "satelliteId"}, {NameRole, "satelliteName"}, {OriginalRole, "originalName"}, {ElevationRole, "elevationText"}};
+    return {{IdRole, "satelliteId"}, {NameRole, "satelliteName"}, {OriginalRole, "originalName"}, {ElevationRole, "elevationText"}, {PredictionRole, "predictionText"}};
 }
 QVariant SatelliteModel::data(const QModelIndex &index, int role) const
 {
@@ -316,6 +321,7 @@ QVariant SatelliteModel::data(const QModelIndex &index, int role) const
     case NameRole: return Orbit::displayName(satellite);
     case OriginalRole: return satellite.name;
     case ElevationRole: return m_elevations.contains(satellite.number) ? number(m_elevations.value(satellite.number), 1) + QStringLiteral("°") : tr("待计算");
+    case PredictionRole: return m_watchSummaries.value(satellite.number, m_clock && m_clock->hasObserver() ? tr("预报计算中") : tr("请选择观测地点"));
     default: return {};
     }
 }
@@ -370,6 +376,7 @@ void SatelliteModel::setClock(AppState *clock)
         connect(clock, &AppState::calculationFrequencyChanged, this, reschedule);
         connect(clock, &AppState::updateFrequencyChanged, this, reschedule);
         connect(clock, &AppState::localizedChanged, this, [this] {
+            updateWatchRows();
             emit planChanged();
             emit storageChanged();
             emit localizedChanged(); emit detailsChanged(); emit frameChanged(); emit trajectoryChanged();
@@ -377,6 +384,10 @@ void SatelliteModel::setClock(AppState *clock)
             if (!m_rows.isEmpty()) emit dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1));
         });
         connect(clock, &AppState::timeChanged, this, [this] {
+            const double watchTime = m_clock->unixTime();
+            if (static_cast<qint64>(std::floor(watchTime / 86400)) != m_watchRequestedDay) requestWatchPredictions();
+            if (watchTime >= m_watchNextBoundary || watchTime < m_watchClockTime || watchTime - m_watchClockTime > 3) updateWatchRows();
+            m_watchClockTime = watchTime;
             if (std::abs(m_clock->unixTime() - m_lastTime) > 3) {
                 ++m_revision;
                 if (previewActive()) { ++m_previewRevision; m_previewTime = 0; }
@@ -387,6 +398,7 @@ void SatelliteModel::setClock(AppState *clock)
             requestFrame();
         });
         connect(clock, &AppState::observerChanged, this, [this] {
+            requestWatchPredictions();
             invalidate();
             if (previewActive()) { ++m_previewRevision; refreshPreview(); }
         });
@@ -424,6 +436,132 @@ void SatelliteModel::filter()
         }
     }
     endResetModel();
+    sortWatchRows();
+}
+
+void SatelliteModel::setWatchOrder(int order)
+{
+    order = order == 1 ? 1 : 0;
+    if (m_watchOrder == order) return;
+    m_watchOrder = order; m_settings.setValue("watchlist/order", order);
+    sortWatchRows(); emit watchlistChanged();
+}
+
+void SatelliteModel::sortWatchRows()
+{
+    auto sorted = m_rows;
+    const auto position = [&](int row) { return m_watchlist.indexOf(QString::number(m_satellites[row].number)); };
+    std::stable_sort(sorted.begin(), sorted.end(), [&](int a, int b) {
+        if (m_watchOrder == 1) {
+            const double ta = m_watchNextTimes.value(m_satellites[a].number, std::numeric_limits<double>::infinity());
+            const double tb = m_watchNextTimes.value(m_satellites[b].number, std::numeric_limits<double>::infinity());
+            if (ta != tb) return ta < tb;
+        }
+        return position(a) < position(b);
+    });
+    for (qsizetype i = 0; i < sorted.size(); ++i) {
+        const auto from = m_rows.indexOf(sorted[i]);
+        if (from == i) continue;
+        beginMoveRows({}, static_cast<int>(from), static_cast<int>(from), {}, static_cast<int>(i));
+        m_rows.move(from, i);
+        endMoveRows();
+    }
+}
+
+void SatelliteModel::requestWatchPredictions()
+{
+    if (!m_clock) return;
+    m_watchRequestedDay = static_cast<qint64>(std::floor(m_clock->unixTime() / 86400));
+    ++m_watchGeneration;
+    if (m_watchCancel) m_watchCancel->store(true);
+    m_watchTimer.start();
+}
+
+void SatelliteModel::calculateWatchPredictions()
+{
+    if (m_watchBusy || !m_clock || !m_clock->hasObserver()) return;
+    const auto day = static_cast<qint64>(std::floor(m_clock->unixTime() / 86400));
+    const Orbit::Observer observer{m_clock->observerLatitude(), m_clock->observerLongitude(), m_clock->ellipsoidHeight() / 1000, m_clock->minimumElevation()};
+    if (!std::isfinite(observer.heightKm)) return;
+    if (day != m_watchDay || observer.latitude != m_watchObserver.latitude || observer.longitude != m_watchObserver.longitude
+        || observer.heightKm != m_watchObserver.heightKm || observer.minimumElevation != m_watchObserver.minimumElevation) m_watchPredictions.clear();
+    m_watchDay = day; m_watchObserver = observer;
+    QVector<Orbit::Satellite> pending;
+    QSet<qint64> ids;
+    for (const auto &key : m_watchlist) {
+        const auto id = m_owners.value(key.toLongLong(), key.toLongLong());
+        if (ids.contains(id) || !m_index.contains(id)) continue;
+        ids.insert(id);
+        const auto &satellite = m_satellites[m_index.value(id)];
+        const auto existing = m_watchPredictions.constFind(id);
+        if (existing == m_watchPredictions.cend() || !sameOrbit(satellite, existing->satellite)) {
+            m_watchPredictions.remove(id); pending.append(satellite);
+        }
+    }
+    for (auto it = m_watchPredictions.begin(); it != m_watchPredictions.end();)
+        if (!ids.contains(it.key())) it = m_watchPredictions.erase(it); else ++it;
+    updateWatchRows();
+    if (pending.isEmpty()) return;
+    m_watchBusy = true;
+    m_watchCancel = std::make_shared<std::atomic_bool>(false);
+    const auto generation = m_watchGeneration;
+    m_pool.start([this, pending, observer, day, generation, cancel = m_watchCancel] {
+        QHash<qint64, WatchPrediction> results;
+        // The previous day supplies rise times for passes already in progress.
+        for (const auto &satellite : pending) {
+            if (cancel->load()) break;
+            results.insert(satellite.number, {satellite, Orbit::predictPasses(satellite, (day - 1) * 86400.0, (day + 2) * 86400.0, observer)});
+        }
+        QMetaObject::invokeMethod(this, [this, generation, results = std::move(results)]() mutable {
+            m_watchBusy = false;
+            if (generation == m_watchGeneration) {
+                for (auto it = results.begin(); it != results.end(); ++it) m_watchPredictions.insert(it.key(), std::move(it.value()));
+                updateWatchRows();
+            } else m_watchTimer.start();
+        }, Qt::QueuedConnection);
+    }, -1);
+}
+
+void SatelliteModel::updateWatchRows()
+{
+    if (!m_clock) return;
+    const double time = m_clock->unixTime();
+    const QTimeZone zone(m_clock->timeZone().toUtf8());
+    const auto date = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(time), zone).date();
+    QHash<qint64, QString> summaries;
+    QHash<qint64, double> times;
+    m_watchNextBoundary = date.addDays(1).startOfDay(zone).toSecsSinceEpoch();
+    for (const auto &key : m_watchlist) {
+        const auto id = m_owners.value(key.toLongLong(), key.toLongLong());
+        const auto forecast = m_watchPredictions.constFind(id);
+        if (forecast == m_watchPredictions.cend()) continue;
+        QString text = tr("24 h 内暂无过境");
+        for (const auto &pass : forecast->passes) {
+            for (double change : {pass.rise.time - 86400, pass.rise.time, pass.set.time})
+                if (change > time) m_watchNextBoundary = std::min(m_watchNextBoundary, change);
+            if (pass.set.time <= time || pass.rise.time >= time + 86400) continue;
+            times.insert(id, pass.rise.time <= time ? 0 : pass.rise.time);
+            if (pass.startsBeforeWindow || pass.endsAfterWindow) text = tr("持续高于最低高度角");
+            else {
+                const auto rise = QDateTime::fromSecsSinceEpoch(qRound64(pass.rise.time), zone);
+                text = pass.rise.time <= time ? tr("正在过境") : tr("下一次 %1").arg(rise.toString(rise.date() == date ? "HH:mm" : "MM-dd HH:mm"));
+                text += tr(" · 峰值 %1°").arg(number(pass.peak.elevation, 1));
+            }
+            const bool optical = std::any_of(pass.visibleIntervals.begin(), pass.visibleIntervals.end(), [time](const auto &interval) {
+                return interval[1] > time && interval[0] < time + 86400;
+            });
+            if (optical) text += tr(" · 光学");
+            for (const auto &interval : pass.visibleIntervals)
+                for (double change : {interval[0] - 86400, interval[1]})
+                    if (change > time) m_watchNextBoundary = std::min(m_watchNextBoundary, change);
+            break;
+        }
+        summaries.insert(id, text);
+    }
+    if (summaries == m_watchSummaries && times == m_watchNextTimes) return;
+    m_watchSummaries = std::move(summaries); m_watchNextTimes = std::move(times);
+    sortWatchRows();
+    if (!m_rows.isEmpty()) emit dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1), {PredictionRole});
 }
 
 void SatelliteModel::setGroup(const QString &group)
@@ -792,6 +930,7 @@ void SatelliteModel::install(QVector<Orbit::Satellite> satellites, Source source
     }
     if (selectedWatched()) m_lastWatchedSelection = m_selected;
     filter(); invalidate(); emit selectionChanged(); emit catalogChanged(); emit watchlistChanged(); emit sourceChanged();
+    requestWatchPredictions();
     if (m_autoCleanup && !m_storageBusy) pruneSnapshots();
     emit storageChanged();
     if (previewActive()) { ++m_previewRevision; refreshPreview(); }
@@ -823,6 +962,7 @@ void SatelliteModel::setWatched(const QString &id, bool watched)
     if (watched == m_watchlist.contains(key) || (watched && !m_index.contains(number))) return;
     if (watched) m_watchlist.append(key); else m_watchlist.removeAll(key);
     m_settings.setValue("watchlist/ids", m_watchlist);
+    requestWatchPredictions();
     ++m_revision;
     filter(); emit watchlistChanged();
     if ((!watched && m_selected == number && !previewActive()) || !m_selected) {

@@ -69,13 +69,28 @@ Rectangle {
                 height: 1
             }
         }
+        ComboBox {
+            id: watchSort
+            Layout.fillWidth: true
+            implicitHeight: 28
+            model: [0, 1]
+            currentIndex: sidebar.satellites.watchOrder
+            displayText: currentIndex === 0 ? qsTr("清单顺序") : qsTr("下一次过境")
+            Accessible.name: qsTr("观测清单排序")
+            delegate: ItemDelegate {
+                required property int modelData
+                width: watchSort.width
+                text: modelData === 0 ? qsTr("清单顺序") : qsTr("下一次过境")
+            }
+            onActivated: sidebar.satellites.watchOrder = currentIndex
+        }
         ListView {
             id: list
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: 54
-            Layout.preferredHeight: Math.max(54, Math.min(count, 8) * 54)
-            Layout.maximumHeight: Math.max(54, Math.min(count, 8) * 54)
+            Layout.preferredHeight: Math.max(64, Math.min(contentHeight, 8 * 90))
+            Layout.maximumHeight: Math.max(64, Math.min(contentHeight, 8 * 90))
             clip: true
             model: sidebar.satellites
             currentIndex: -1
@@ -86,8 +101,9 @@ Rectangle {
                 required property string satelliteName
                 required property string originalName
                 required property string elevationText
+                required property string predictionText
                 width: ListView.view.width
-                height: 54
+                height: Math.max(58, contentItem.implicitHeight + topPadding + bottomPadding)
                 highlighted: satelliteId === sidebar.satellites.selectedId
                 background: Rectangle {
                     color: entry.highlighted ? Theme.selection : entry.hovered ? Theme.hover : "transparent"
@@ -100,22 +116,14 @@ Rectangle {
                 }
                 contentItem: ColumnLayout {
                     spacing: 3
-                    Label {
-                        text: entry.satelliteName
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                        font.bold: entry.highlighted
-                        font.pixelSize: 13
-                    }
                     RowLayout {
+                        Layout.fillWidth: true
                         Label {
-                            text: entry.satelliteId
-                            color: Theme.muted
-                            font.family: Theme.numberFont
-                            font.pixelSize: 12
-                        }
-                        Item {
+                            text: entry.satelliteName
                             Layout.fillWidth: true
+                            elide: Text.ElideRight
+                            font.bold: entry.highlighted
+                            font.pixelSize: 13
                         }
                         Label {
                             text: entry.elevationText
@@ -133,10 +141,17 @@ Rectangle {
                             onClicked: sidebar.satellites.setWatched(entry.satelliteId, false)
                         }
                     }
+                    Label {
+                        text: entry.satelliteId + " · " + entry.predictionText
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        font.pixelSize: 12
+                        color: Theme.muted
+                    }
                 }
                 ToolTip.visible: hovered
                 ToolTip.delay: 500
-                ToolTip.text: originalName + qsTr("\n卫星编号 ") + satelliteId + qsTr("\n高度角 ") + elevationText
+                ToolTip.text: originalName + qsTr("\n卫星编号 ") + satelliteId + qsTr("\n高度角 ") + elevationText + "\n" + predictionText
                 onClicked: {
                     sidebar.satellites.select(satelliteId);
                     sidebar.targetActivated();
