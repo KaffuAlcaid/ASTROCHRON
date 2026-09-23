@@ -2,6 +2,7 @@
 
 #include <QSGFlatColorMaterial>
 #include <QSGGeometryNode>
+#include <QSGTransformNode>
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -23,6 +24,7 @@ struct Segment {
 
 struct OrbitNode : QSGNode {
     std::array<QSGGeometryNode *, LayerCount> layers{};
+    std::array<QSGTransformNode *, LayerCount> transforms{};
     std::array<QVector<QPointF>, LayerCount> scratch;
     QVector<Segment> segments;
     std::array<int, 4> totals{};
@@ -40,7 +42,10 @@ struct OrbitNode : QSGNode {
             node->setMaterial(new QSGFlatColorMaterial);
             node->setFlag(QSGNode::OwnsGeometry);
             node->setFlag(QSGNode::OwnsMaterial);
-            appendChildNode(node);
+            auto *transform = new QSGTransformNode;
+            transform->appendChildNode(node);
+            appendChildNode(transform);
+            transforms[i] = transform;
             layers[i] = node;
         }
     }
@@ -184,6 +189,16 @@ QPointF OrbitLayer::selectedPosition() const
     return {-1000, -1000};
 }
 
+QPointF OrbitLayer::selectedCoordinate(double time) const
+{
+    const auto index = m_pointIndices.value(m_selected, -1);
+    if (index < 0) return {qQNaN(), qQNaN()};
+    const auto &marker = m_points[index];
+    const double f = marker.nextTime > marker.time ? std::clamp((time - marker.time) / (marker.nextTime - marker.time), 0.0, 1.0) : 0;
+    return {wrap(marker.longitude + wrap(marker.nextLongitude - marker.longitude) * f),
+        marker.latitude + (marker.nextLatitude - marker.latitude) * f};
+}
+
 QString OrbitLayer::satelliteAt(double x, double y) const
 {
     if (!m_map || !m_showSatellites) return {};
@@ -216,8 +231,11 @@ QSGNode *OrbitLayer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     setColor(root->layers[HighlightedPast], m_pastColor); setColor(root->layers[HighlightedFuture], m_futureColor);
     setColor(root->layers[SplitHighlightedPast], m_pastColor); setColor(root->layers[SplitHighlightedFuture], m_futureColor);
 
-    if (root->revision != m_trajectoryRevision || root->longitude != m_map->centerLongitude()
-        || root->latitude != m_map->centerLatitude() || root->scale != scale || root->width != width() || root->height != height()
+    auto offset = QPointF(-wrap(m_map->centerLongitude() - root->longitude) * scale,
+        (m_map->centerLatitude() - root->latitude) * scale);
+    const auto pathBounds = bounds.adjusted(-256, -256, 256, 256);
+    if (root->revision != m_trajectoryRevision || std::abs(offset.x()) > 128 || std::abs(offset.y()) > 128
+        || root->scale != scale || root->width != width() || root->height != height()
         || root->highlightStart != m_highlightStart || root->highlightEnd != m_highlightEnd) {
         root->segments.clear(); root->totals = {};
         std::array<QVector<QPointF>, 4> vertices;
@@ -233,8 +251,8 @@ QSGNode *OrbitLayer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
             const bool highlighted = (ta + tb) / 2 >= m_highlightStart && (ta + tb) / 2 <= m_highlightEnd;
             Segment entry{pa, pb, ta, tb, dash, highlighted, {}};
             const int past = highlighted ? 1 : 0, future = highlighted ? 3 : 2;
-            segment(vertices[past], pa, pb, highlighted ? 1.5 : 1.25, true, dash, worldWidth, bounds);
-            segment(vertices[future], pa, pb, highlighted ? 2.5 : 2, false, 0, worldWidth, bounds);
+            segment(vertices[past], pa, pb, highlighted ? 1.5 : 1.25, true, dash, worldWidth, pathBounds);
+            segment(vertices[future], pa, pb, highlighted ? 2.5 : 2, false, 0, worldWidth, pathBounds);
             const double length = std::hypot(pb.x() - pa.x(), pb.y() - pa.y());
             if (length >= 0.01) dash = std::fmod(dash + length, 9.0);
             for (int j = 0; j < 4; ++j) root->totals[j] = static_cast<int>(vertices[j].size());
@@ -251,7 +269,12 @@ QSGNode *OrbitLayer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         root->revision = m_trajectoryRevision;
         root->longitude = m_map->centerLongitude(); root->latitude = m_map->centerLatitude(); root->scale = scale;
         root->width = width(); root->height = height(); root->highlightStart = m_highlightStart; root->highlightEnd = m_highlightEnd;
+        offset = {};
     }
+    QMatrix4x4 translation;
+    translation.translate(static_cast<float>(offset.x()), static_cast<float>(offset.y()));
+    for (int layer : {Past, Future, SplitPast, SplitFuture, HighlightedPast, HighlightedFuture, SplitHighlightedPast, SplitHighlightedFuture})
+        root->transforms[layer]->setMatrix(translation);
 
     const auto active = std::upper_bound(root->segments.cbegin(), root->segments.cend(), m_time,
         [](double time, const Segment &entry) { return time < entry.end; });
@@ -262,8 +285,8 @@ QSGNode *OrbitLayer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     if (active != root->segments.cend() && m_time > active->start) {
         excluded = active->after;
         const auto split = active->a + (active->b - active->a) * ((m_time - active->start) / (active->end - active->start));
-        if (m_showPast) segment(splitPast, active->a, split, active->highlighted ? 1.5 : 1.25, true, active->dashPhase, worldWidth, bounds);
-        if (m_showFuture) segment(splitFuture, split, active->b, active->highlighted ? 2.5 : 2, false, 0, worldWidth, bounds);
+        if (m_showPast) segment(splitPast, active->a, split, active->highlighted ? 1.5 : 1.25, true, active->dashPhase, worldWidth, pathBounds);
+        if (m_showFuture) segment(splitFuture, split, active->b, active->highlighted ? 2.5 : 2, false, 0, worldWidth, pathBounds);
     }
     setCount(root->layers[Past], m_showPast ? ended[0] : 0);
     setCount(root->layers[HighlightedPast], m_showPast ? ended[1] : 0);

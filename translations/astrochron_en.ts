@@ -1761,6 +1761,14 @@ Acquired </translation>
             <translation>Settings</translation>
         </message>
         <message>
+            <source>跟随当前卫星</source>
+            <translation>Follow selected satellite</translation>
+        </message>
+        <message>
+            <source>地图倍率</source>
+            <translation>Map zoom</translation>
+        </message>
+        <message>
             <source>绘图刷新频率</source>
             <translation>Map refresh rate</translation>
         </message>

@@ -271,12 +271,16 @@ ApplicationWindow {
     ObserverDialog {
         id: observerDialog
         clock: appState
-        onLocationApplied: mapWorkspace.centerObserver()
+        onLocationApplied: {
+            if (mapWorkspace.following) mapWorkspace.followTarget();
+            else mapWorkspace.centerObserver();
+        }
     }
     SettingsDialog {
         id: settingsDialog
         clock: appState
         weather: weatherModel
+        mapView: mapWorkspace
     }
     CatalogDialog {
         id: catalogDialog

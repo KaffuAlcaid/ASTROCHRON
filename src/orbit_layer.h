@@ -33,6 +33,7 @@ public:
     void setMarkers(const QVariantList &markers);
     void setTrajectory(const QVariantList &trajectory);
     QPointF selectedPosition() const;
+    Q_INVOKABLE QPointF selectedCoordinate(double time) const;
     Q_INVOKABLE QString satelliteAt(double x, double y) const;
 signals:
     void mapChanged();

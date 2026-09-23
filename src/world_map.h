@@ -8,11 +8,12 @@
 class WorldMap : public QQuickItem {
     Q_OBJECT
     QML_ELEMENT
-    Q_PROPERTY(double zoom READ zoom NOTIFY viewChanged)
+    Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY zoomChanged)
     Q_PROPERTY(double centerLongitude READ centerLongitude NOTIFY viewChanged)
     Q_PROPERTY(double centerLatitude READ centerLatitude NOTIFY viewChanged)
     Q_PROPERTY(double pixelsPerDegree READ pixelsPerDegree NOTIFY viewChanged)
     Q_PROPERTY(QVariantList cityLabels READ cityLabels NOTIFY cityLabelsChanged)
+    Q_PROPERTY(QPointF labelOffset READ labelOffset NOTIFY viewChanged)
     Q_PROPERTY(QPointF observerPosition READ observerPosition NOTIFY viewChanged)
     Q_PROPERTY(double observerLongitude MEMBER m_observerLongitude NOTIFY observerChanged)
     Q_PROPERTY(double observerLatitude MEMBER m_observerLatitude NOTIFY observerChanged)
@@ -29,11 +30,13 @@ class WorldMap : public QQuickItem {
 public:
     explicit WorldMap(QQuickItem *parent = nullptr);
     double zoom() const { return m_zoom; }
+    void setZoom(double zoom);
     double centerLongitude() const { return m_longitude; }
     double centerLatitude() const { return m_latitude; }
     double pixelsPerDegree() const;
     QVariantList cityLabels() const { return m_labels; }
     QPointF observerPosition() const;
+    QPointF labelOffset() const;
     Q_INVOKABLE void zoomAt(double factor, double x, double y);
     Q_INVOKABLE void panBy(double x, double y);
     Q_INVOKABLE void resetView();
@@ -42,6 +45,7 @@ public:
     Q_INVOKABLE void updateLabels();
 
 signals:
+    void zoomChanged();
     void viewChanged();
     void cityLabelsChanged();
     void observerChanged();
@@ -71,4 +75,6 @@ private:
     QColor m_borderColor = QColor("#91a3a7");
     QColor m_gridColor = QColor("#466067");
     QVariantList m_labels;
+    double m_labelLongitude = 0, m_labelLatitude = 0, m_labelScale = 0;
+    QSizeF m_labelSize;
 };

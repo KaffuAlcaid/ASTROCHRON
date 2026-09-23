@@ -1,4 +1,5 @@
 #include "world_map.h"
+#include <QSettings>
 #include "map_data.h"
 
 #include <QFontMetricsF>
@@ -70,12 +71,13 @@ QVector<QPointF> graticule()
 
 WorldMap::WorldMap(QQuickItem *parent) : QQuickItem(parent)
 {
+    m_zoom = qBound(1.0, QSettings().value("map/zoom", 8.0).toDouble(), 12.0);
     setFlag(ItemHasContents);
     setClip(true);
     worldMapData();
     connect(this, &WorldMap::layersChanged, this, [this] { m_rebuild = true; updateLabels(); update(); });
     connect(this, &WorldMap::appearanceChanged, this, [this] { m_rebuild = true; update(); });
-    connect(this, &WorldMap::observerChanged, this, &WorldMap::updateView);
+    connect(this, &WorldMap::observerChanged, this, [this] { updateLabels(); updateView(); });
 }
 
 double WorldMap::pixelsPerDegree() const
@@ -92,6 +94,18 @@ QPointF WorldMap::screenPosition(double longitude, double latitude) const
 
 QPointF WorldMap::observerPosition() const { return screenPosition(m_observerLongitude, m_observerLatitude); }
 
+QPointF WorldMap::labelOffset() const
+{
+    return {-wrapLongitude(m_longitude - m_labelLongitude) * pixelsPerDegree(),
+        (m_latitude - m_labelLatitude) * pixelsPerDegree()};
+}
+
+void WorldMap::setZoom(double zoom)
+{
+    if (!std::isfinite(zoom) || zoom <= 0) return;
+    zoomAt(zoom / m_zoom, width() / 2, height() / 2);
+}
+
 QPointF WorldMap::coordinateAt(double x, double y) const
 {
     const auto scale = pixelsPerDegree();
@@ -103,10 +117,13 @@ void WorldMap::zoomAt(double factor, double x, double y)
 {
     if (!std::isfinite(factor) || factor <= 0) return;
     const auto before = coordinateAt(x, y);
+    const double previousZoom = m_zoom;
     m_zoom = qBound(1.0, m_zoom * factor, 12.0);
+    QSettings().setValue("map/zoom", m_zoom);
     const auto scale = pixelsPerDegree();
     m_longitude = before.x() - (x - width() / 2.0) / scale;
     m_latitude = before.y() + (y - height() / 2.0) / scale;
+    if (previousZoom != m_zoom) emit zoomChanged();
     updateView();
 }
 
@@ -119,14 +136,19 @@ void WorldMap::panBy(double x, double y)
 
 void WorldMap::resetView()
 {
+    const double previousZoom = m_zoom;
     m_zoom = 1;
+    QSettings().setValue("map/zoom", m_zoom);
     m_longitude = 0;
     m_latitude = 0;
+    if (previousZoom != m_zoom) emit zoomChanged();
     updateView();
 }
 
 void WorldMap::centerOn(double longitude, double latitude)
 {
+    if (!std::isfinite(longitude) || !std::isfinite(latitude)) return;
+    if (m_longitude == longitude && m_latitude == latitude) return;
     m_longitude = longitude;
     m_latitude = latitude;
     updateView();
@@ -143,13 +165,18 @@ void WorldMap::updateView()
     m_longitude = wrapLongitude(m_longitude);
     const double latitudeLimit = std::max(0.0, 90.0 - height() / (2.0 * pixelsPerDegree()));
     m_latitude = qBound(-latitudeLimit, m_latitude, latitudeLimit);
-    updateLabels();
+    const auto offset = labelOffset();
+    if (m_labelScale != pixelsPerDegree() || m_labelSize != size()
+        || std::abs(offset.x()) >= 32 || std::abs(offset.y()) >= 32)
+        updateLabels();
     emit viewChanged();
     update();
 }
 
 void WorldMap::updateLabels()
 {
+    m_labelLongitude = m_longitude; m_labelLatitude = m_latitude;
+    m_labelScale = pixelsPerDegree(); m_labelSize = size();
     QVariantList labels;
     if (m_showCities && width() > 0 && height() > 0) {
         QFont font(QStringLiteral("Microsoft YaHei UI"));

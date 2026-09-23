@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtCore
 import Astrochron
 
 ColumnLayout {
@@ -9,13 +10,25 @@ ColumnLayout {
     required property SatelliteModel satellites
     property var passInfo: ({})
     property bool expanded: false
-    property bool following: false
+    property alias following: mapPreferences.following
+    property alias zoom: worldMap.zoom
     property bool picking: false
     property var observation: satellites.observation
     signal expandRequested
     signal detailsRequested
     signal targetActivated
     spacing: 0
+    Settings {
+        id: mapPreferences
+        category: "map"
+        property bool following: true
+    }
+    function followTarget() {
+        if (!following) return;
+        const point = orbitLayer.selectedCoordinate(clock.unixTime);
+        if (isFinite(point.x) && isFinite(point.y)) worldMap.centerOn(point.x, point.y);
+    }
+    onFollowingChanged: if (following) Qt.callLater(followTarget)
     function centerObserver() {
         following = false;
         worldMap.centerOn(clock.observerLongitude, clock.observerLatitude);
@@ -23,12 +36,12 @@ ColumnLayout {
     Connections {
         target: workspace.clock
         function onLocalizedChanged() { worldMap.updateLabels(); }
+        function onTimeChanged() { workspace.followTarget(); }
     }
     Connections {
         target: workspace.satellites
         function onFrameChanged() {
-            if (workspace.following && workspace.observation.longitude !== undefined)
-                worldMap.centerOn(workspace.observation.longitude, workspace.observation.latitude);
+            Qt.callLater(workspace.followTarget);
         }
     }
     RowLayout {
@@ -76,8 +89,7 @@ ColumnLayout {
         picking: workspace.picking
         onFollowRequested: {
             workspace.following = !workspace.following;
-            if (workspace.following && workspace.observation.longitude !== undefined)
-                worldMap.centerOn(workspace.observation.longitude, workspace.observation.latitude);
+            workspace.followTarget();
         }
         onNavigationStarted: workspace.following = false
         onPickingRequested: workspace.picking = !workspace.picking
@@ -157,6 +169,8 @@ ColumnLayout {
                 model: worldMap.cityLabels
                 delegate: Item {
                     required property var modelData
+                    x: worldMap.labelOffset.x
+                    y: worldMap.labelOffset.y
                     z: 2
                     Rectangle {
                         x: modelData.pointX - 1
@@ -241,13 +255,11 @@ ColumnLayout {
                     }
                 }
                 onWheel: wheel => {
-                    workspace.following = false;
-                    worldMap.zoomAt(Math.pow(1.0015, wheel.angleDelta.y), wheel.x, wheel.y);
+                    worldMap.zoomAt(Math.pow(1.0015, wheel.angleDelta.y), workspace.following ? width / 2 : wheel.x, workspace.following ? height / 2 : wheel.y);
                     wheel.accepted = true;
                 }
                 onDoubleClicked: mouse => {
-                    workspace.following = false;
-                    worldMap.zoomAt(1.5, mouse.x, mouse.y);
+                    worldMap.zoomAt(1.5, workspace.following ? width / 2 : mouse.x, workspace.following ? height / 2 : mouse.y);
                 }
             }
         }
@@ -260,5 +272,8 @@ ColumnLayout {
         Layout.topMargin: 7
         Layout.bottomMargin: 7
     }
-    Component.onCompleted: centerObserver()
+    Component.onCompleted: {
+        if (following) Qt.callLater(followTarget);
+        else worldMap.centerOn(clock.observerLongitude, clock.observerLatitude);
+    }
 }

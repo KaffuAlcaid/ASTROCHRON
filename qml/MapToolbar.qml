@@ -43,7 +43,6 @@ RowLayout {
         tip: qsTr("缩小")
         enabled: toolbar.map.zoom > 1
         onClicked: {
-            toolbar.navigationStarted();
             toolbar.map.zoomAt(1 / 1.5, toolbar.map.width / 2, toolbar.map.height / 2);
         }
     }
@@ -59,7 +58,6 @@ RowLayout {
         tip: qsTr("放大")
         enabled: toolbar.map.zoom < 12
         onClicked: {
-            toolbar.navigationStarted();
             toolbar.map.zoomAt(1.5, toolbar.map.width / 2, toolbar.map.height / 2);
         }
     }

@@ -7,6 +7,7 @@ Dialog {
     id: dialog
     required property AppState clock
     required property WeatherModel weather
+    required property var mapView
     title: qsTr("设置")
     modal: true
     anchors.centerIn: Overlay.overlay
@@ -30,6 +31,20 @@ Dialog {
             LanguageSettings {
                 clock: dialog.clock
                 Layout.fillWidth: true
+            }
+            CheckBox {
+                text: qsTr("跟随当前卫星")
+                checked: dialog.mapView.following
+                onToggled: dialog.mapView.following = checked
+            }
+            RowLayout {
+                Label { text: qsTr("地图倍率"); Layout.fillWidth: true }
+                SpinBox {
+                    from: 1; to: 12
+                    value: Math.round(dialog.mapView.zoom)
+                    onValueModified: dialog.mapView.zoom = value
+                }
+                Label { text: "×" }
             }
             RowLayout {
                 Label {
