@@ -23,7 +23,7 @@ AppState::AppState(QObject *parent) : QObject(parent), m_reference(QDateTime::cu
     m_language = m_settings.value("appearance/language", "system").toString();
     if (m_language != "system" && m_language != "zh_CN" && m_language != "en") m_language = "system";
     m_startupLanguage = m_language;
-    m_observerName = m_settings.value("observer/name", QStringLiteral("台北")).toString();
+    m_observerName = m_settings.value("observer/name", tr("台北")).toString();
     m_hasObserver = m_settings.contains("observer/name") && m_settings.contains("observer/latitude") && m_settings.contains("observer/longitude");
     m_latitude = m_settings.value("observer/latitude", 25.0330).toDouble();
     m_longitude = m_settings.value("observer/longitude", 121.5654).toDouble();

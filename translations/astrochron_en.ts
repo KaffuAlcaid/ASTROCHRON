@@ -4,6 +4,10 @@
     <context>
         <name>AppState</name>
         <message>
+            <source>台北</source>
+            <translation>Taipei</translation>
+        </message>
+        <message>
             <source>手动填写</source>
             <translation>Manual entry</translation>
         </message>
