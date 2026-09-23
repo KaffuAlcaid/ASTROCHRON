@@ -16,6 +16,7 @@ struct MapDetail {
 };
 
 struct MapCity {
+    QString displayName() const;
     QString name;
     QString originalName;
     QString timeZone;

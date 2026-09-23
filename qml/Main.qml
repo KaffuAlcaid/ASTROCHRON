@@ -88,12 +88,13 @@ ApplicationWindow {
                 anchors.rightMargin: 12
                 spacing: 12
                 Label {
-                    text: "星纪"
+                    text: qsTr("星纪")
                     font.pixelSize: 20
                     font.bold: true
                 }
                 Label {
                     text: "ASTROCHRON"
+                    visible: appState.chinese
                     font.pixelSize: 11
                     color: Theme.muted
                 }
@@ -112,12 +113,12 @@ ApplicationWindow {
                 }
                 IconButton {
                     icon.source: "qrc:/icons/settings-2.svg"
-                    tip: "设置"
+                    tip: qsTr("设置")
                     onClicked: settingsDialog.open()
                 }
                 IconButton {
                     icon.source: "qrc:/icons/moon.svg"
-                    tip: appState.darkTheme ? "浅色界面" : "深色界面"
+                    tip: appState.darkTheme ? qsTr("浅色界面") : qsTr("深色界面")
                     onClicked: appState.darkTheme = !appState.darkTheme
                 }
             }
@@ -132,14 +133,14 @@ ApplicationWindow {
                 anchors.rightMargin: 12
                 spacing: 12
                 Label {
-                    text: appState.hasObserver ? "观测地点：" + appState.observerName : "观测地点：待选择"
+                    text: appState.hasObserver ? qsTr("观测地点：") + appState.observerName : qsTr("观测地点：待选择")
                     font.bold: true
                     font.pixelSize: 12
                     Layout.maximumWidth: 180
                     elide: Text.ElideRight
                 }
                 Button {
-                    text: "更换地点"
+                    text: qsTr("更换地点")
                     icon.source: "qrc:/icons/map-pin.svg"
                     icon.color: Theme.text
                     implicitHeight: 26
@@ -148,26 +149,26 @@ ApplicationWindow {
                 }
                 Label {
                     visible: appState.hasObserver && window.width >= 1040
-                    text: (appState.observerLatitude >= 0 ? "北纬 " : "南纬 ") + Math.abs(appState.observerLatitude).toFixed(4) + "°"
+                    text: (appState.observerLatitude >= 0 ? qsTr("北纬 ") : qsTr("南纬 ")) + Math.abs(appState.observerLatitude).toFixed(4) + "°"
                     font.family: Theme.numberFont
                     font.pixelSize: 12
                     color: Theme.muted
                 }
                 Label {
                     visible: appState.hasObserver && window.width >= 1040
-                    text: (appState.observerLongitude >= 0 ? "东经 " : "西经 ") + Math.abs(appState.observerLongitude).toFixed(4) + "°"
+                    text: (appState.observerLongitude >= 0 ? qsTr("东经 ") : qsTr("西经 ")) + Math.abs(appState.observerLongitude).toFixed(4) + "°"
                     font.family: Theme.numberFont
                     font.pixelSize: 12
                     color: Theme.muted
                 }
                 Label {
                     visible: appState.hasObserver
-                    text: appState.hasObserverHeight ? "海拔 " + appState.observerHeight.toFixed(0) + " m" : appState.elevationBusy ? "正在查询海拔" : "海拔待填写"
+                    text: appState.hasObserverHeight ? qsTr("海拔 ") + appState.observerHeight.toFixed(0) + " m" : appState.elevationBusy ? qsTr("正在查询海拔") : qsTr("海拔待填写")
                     font.pixelSize: 12
                     color: Theme.muted
                 }
                 Label {
-                    text: "最低高度角 " + appState.minimumElevation.toFixed(0) + "°"
+                    text: qsTr("最低高度角 ") + appState.minimumElevation.toFixed(0) + "°"
                     font.pixelSize: 12
                     color: Theme.muted
                 }
@@ -285,8 +286,8 @@ ApplicationWindow {
     }
     FileDialog {
         id: importDialog
-        title: "导入轨道文件"
-        nameFilters: ["轨道文件 (*.json *.tle *.txt)", "所有文件 (*)"]
+        title: qsTr("导入轨道文件")
+        nameFilters: [qsTr("轨道文件 (*.json *.tle *.txt)"), qsTr("所有文件 (*)")]
         onAccepted: satelliteModel.importFile(selectedFile)
     }
     PhotometryDialog {
@@ -295,9 +296,9 @@ ApplicationWindow {
     }
     FileDialog {
         id: exportDialog
-        title: "保存轨道根数"
+        title: qsTr("保存轨道根数")
         fileMode: FileDialog.SaveFile
-        nameFilters: ["轨道根数 (*.json)"]
+        nameFilters: [qsTr("轨道根数 (*.json)")]
         defaultSuffix: "json"
         onAccepted: satelliteModel.exportSelected(selectedFile)
     }

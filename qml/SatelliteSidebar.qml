@@ -17,20 +17,20 @@ Rectangle {
         spacing: 8
         Button {
             Layout.fillWidth: true
-            text: "卫星目录 · " + sidebar.satellites.catalogCount
+            text: qsTr("卫星目录 · ") + sidebar.satellites.catalogCount
             icon.source: "qrc:/icons/folder-open.svg"
             icon.color: Theme.text
             onClicked: sidebar.catalogRequested()
         }
         TextField {
             Layout.fillWidth: true
-            placeholderText: "搜索观测清单"
+            placeholderText: qsTr("搜索观测清单")
             selectByMouse: true
             onTextChanged: sidebar.satellites.search = text
         }
         RowLayout {
             Label {
-                text: "观测清单"
+                text: qsTr("观测清单")
                 font.bold: true
             }
             Label {
@@ -44,7 +44,7 @@ Rectangle {
             }
             IconButton {
                 icon.source: "qrc:/icons/plus.svg"
-                tip: "从目录加入目标"
+                tip: qsTr("从目录加入目标")
                 onClicked: sidebar.catalogRequested()
             }
         }
@@ -52,7 +52,7 @@ Rectangle {
             Layout.leftMargin: 8
             Layout.rightMargin: 8
             Label {
-                text: "卫星 / 编号"
+                text: qsTr("卫星 / 编号")
                 color: Theme.muted
                 font.pixelSize: 11
             }
@@ -60,7 +60,7 @@ Rectangle {
                 Layout.fillWidth: true
             }
             Label {
-                text: "高度角"
+                text: qsTr("高度角")
                 color: Theme.muted
                 font.pixelSize: 11
             }
@@ -127,7 +127,7 @@ Rectangle {
                             implicitWidth: 24
                             implicitHeight: 22
                             icon.source: "qrc:/icons/minus.svg"
-                            tip: "移出观测清单"
+                            tip: qsTr("移出观测清单")
                             opacity: entry.hovered ? 1 : 0
                             enabled: entry.hovered
                             onClicked: sidebar.satellites.setWatched(entry.satelliteId, false)
@@ -136,7 +136,7 @@ Rectangle {
                 }
                 ToolTip.visible: hovered
                 ToolTip.delay: 500
-                ToolTip.text: originalName + "\n卫星编号 " + satelliteId + "\n高度角 " + elevationText
+                ToolTip.text: originalName + qsTr("\n卫星编号 ") + satelliteId + qsTr("\n高度角 ") + elevationText
                 onClicked: {
                     sidebar.satellites.select(satelliteId);
                     sidebar.targetActivated();
@@ -145,7 +145,7 @@ Rectangle {
             Label {
                 anchors.centerIn: parent
                 visible: list.count === 0
-                text: sidebar.satellites.downloading ? "正在获取轨道数据" : "观测清单暂无匹配目标"
+                text: sidebar.satellites.downloading ? qsTr("正在获取轨道数据") : qsTr("观测清单暂无匹配目标")
                 color: Theme.muted
                 font.pixelSize: 11
             }
@@ -176,7 +176,7 @@ Rectangle {
                             implicitWidth: 24
                             implicitHeight: 20
                             icon.source: "qrc:/icons/crosshair.svg"
-                            tip: "预览 " + modelData.name
+                            tip: qsTr("预览 ") + modelData.name
                             enabled: modelData.catalogCount > 0
                             onClicked: sidebar.satellites.previewConstellation(modelData.key)
                         }
@@ -184,12 +184,12 @@ Rectangle {
                             implicitWidth: 24
                             implicitHeight: 20
                             icon.source: "qrc:/icons/chevron-right.svg"
-                            tip: "查看成员"
+                            tip: qsTr("查看成员")
                             onClicked: sidebar.groupRequested(modelData.key)
                         }
                     }
                     Label {
-                        text: "目录 " + modelData.catalogCount + " · " + modelData.scope + " " + (modelData.loaded ? modelData.groupCount : "待获取")
+                        text: qsTr("目录 ") + modelData.catalogCount + " · " + modelData.scope + " " + (modelData.loaded ? modelData.groupCount : qsTr("待获取"))
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         font.pixelSize: 11
@@ -198,7 +198,7 @@ Rectangle {
                 }
                 ToolTip.visible: hovered
                 ToolTip.delay: 500
-                ToolTip.text: modelData.loaded ? "CelesTrak · " + modelData.key + "\n获取时间 " + modelData.acquired : "目录按本地轨道对象统计"
+                ToolTip.text: modelData.loaded ? "CelesTrak · " + modelData.key + qsTr("\n获取时间 ") + modelData.acquired : qsTr("目录按本地轨道对象统计")
                 onClicked: sidebar.groupRequested(modelData.key)
             }
         }

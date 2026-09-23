@@ -19,10 +19,10 @@ QString CatalogModel::constellation(const Orbit::Satellite &satellite)
 
 QString CatalogModel::constellationName(const QString &key)
 {
-    static const QHash<QString, QString> names{{"stations", QStringLiteral("空间站")}, {"starlink", "Starlink"},
-        {"gps-ops", "GPS"}, {"galileo", "Galileo"}, {"glo-ops", "GLONASS"}, {"beidou", QStringLiteral("北斗")},
-        {"oneweb", "OneWeb"}, {"qianfan", QStringLiteral("千帆")}, {"hulianwang", QStringLiteral("互联网低轨")},
-        {"kuiper", QStringLiteral("柯伊伯")}, {"iridium-NEXT", QStringLiteral("铱星")}, {"other", QStringLiteral("其他目标")}};
+    static const QHash<QString, QString> names{{"stations", tr("空间站")}, {"starlink", "Starlink"},
+        {"gps-ops", "GPS"}, {"galileo", tr("伽利略")}, {"glo-ops", "GLONASS"}, {"beidou", tr("北斗")},
+        {"oneweb", "OneWeb"}, {"qianfan", tr("千帆")}, {"hulianwang", tr("互联网低轨")},
+        {"kuiper", tr("柯伊伯")}, {"iridium-NEXT", tr("铱星")}, {"other", tr("其他目标")}};
     return names.value(key, key);
 }
 
@@ -48,8 +48,8 @@ QVariant CatalogModel::data(const QModelIndex &index, int role) const
     case ExpandedRole: return group && (m_expanded.contains(row.group) || !m_search.trimmed().isEmpty());
     case WatchedRole: return !group && m_source->isWatched(QString::number(satellite->number));
     case NumberRole: return group ? QString() : QString::number(satellite->number);
-    case PrnRole: return group ? QString() : m_source->m_prns.value(satellite->number, QStringLiteral("暂无"));
-    case PlaneRole: return group ? QString() : m_source->m_planes.value(satellite->number, QStringLiteral("暂无"));
+    case PrnRole: return group ? QString() : m_source->m_prns.value(satellite->number, tr("暂无"));
+    case PlaneRole: return group ? QString() : m_source->m_planes.value(satellite->number, tr("暂无"));
     case NodeRole: return group ? QString() : QString::number(satellite->elements.value("RA_OF_ASC_NODE").toDouble(), 'f', 2) + QStringLiteral("°");
     default: return {};
     }
@@ -91,7 +91,7 @@ QVariantList CatalogModel::navigationGroups() const
             {"catalogCount", m_counts.value(group)},
             {"groupCount", m_source ? static_cast<int>(m_source->m_groupMembers.value(group).size()) : 0},
             {"loaded", m_source && m_source->m_groupMembers.contains(group)},
-            {"scope", group.endsWith("-ops") ? QStringLiteral("运行组") : QStringLiteral("来源组")},
+            {"scope", group.endsWith("-ops") ? tr("运行组") : tr("来源组")},
             {"acquired", source.acquired ? QDateTime::fromSecsSinceEpoch(source.acquired, QTimeZone::UTC).toString("yyyy-MM-dd HH:mm:ss 'UTC'") : QString()},
             {"source", source.url}});
     }

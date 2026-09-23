@@ -7,16 +7,20 @@ Dialog {
     id: dialog
     required property AppState clock
     required property WeatherModel weather
-    title: "设置"
+    title: qsTr("设置")
     modal: true
     anchors.centerIn: Overlay.overlay
     width: 430
     standardButtons: Dialog.Close
     contentItem: ColumnLayout {
         spacing: 16
+        LanguageSettings {
+            clock: dialog.clock
+            Layout.fillWidth: true
+        }
         RowLayout {
             Label {
-                text: "实时更新频率"
+                text: qsTr("实时更新频率")
                 Layout.fillWidth: true
             }
             SpinBox {
@@ -32,12 +36,12 @@ Dialog {
             }
         }
         CheckBox {
-            text: "获取观测天气预报"
+            text: qsTr("获取观测天气预报")
             checked: dialog.weather.enabled
             onToggled: dialog.weather.enabled = checked
         }
         Label {
-            text: "天气查询向 Open-Meteo 发送观测地点坐标。"
+            text: qsTr("天气查询向 Open-Meteo 发送观测地点坐标。")
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             font.pixelSize: 12

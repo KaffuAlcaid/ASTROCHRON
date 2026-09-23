@@ -11,6 +11,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QNetworkReply>
+#include <QProcess>
 #include <QUrlQuery>
 #include <QtEndian>
 #include <cmath>
@@ -19,6 +20,9 @@
 
 AppState::AppState(QObject *parent) : QObject(parent), m_reference(QDateTime::currentDateTimeUtc()), m_now(m_reference)
 {
+    m_language = m_settings.value("appearance/language", "system").toString();
+    if (m_language != "system" && m_language != "zh_CN" && m_language != "en") m_language = "system";
+    m_startupLanguage = m_language;
     m_observerName = m_settings.value("observer/name", QStringLiteral("台北")).toString();
     m_hasObserver = m_settings.contains("observer/name") && m_settings.contains("observer/latitude") && m_settings.contains("observer/longitude");
     m_latitude = m_settings.value("observer/latitude", 25.0330).toDouble();
@@ -26,7 +30,7 @@ AppState::AppState(QObject *parent) : QObject(parent), m_reference(QDateTime::cu
     m_height = m_settings.contains("observer/height") ? m_settings.value("observer/height").toDouble() : std::numeric_limits<double>::quiet_NaN();
     m_automaticElevation = m_settings.value("observer/automaticElevation", true).toBool();
     m_minimumElevation = m_settings.value("observer/minimumElevation", 10).toDouble();
-    m_elevationStatus = m_settings.value("observer/heightSource", hasObserverHeight() ? QStringLiteral("手动填写") : QStringLiteral("海拔待查询")).toString();
+    m_elevationStatus = m_settings.value("observer/heightSource", hasObserverHeight() ? QString::fromUtf8(QT_TR_NOOP("手动填写")) : QString::fromUtf8(QT_TR_NOOP("海拔待查询"))).toString();
     m_timeZone = QTimeZone(m_settings.value("observer/timeZone", QStringLiteral("Asia/Taipei")).toByteArray());
     m_dark = m_settings.value("appearance/dark", QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark).toBool();
     m_updateFrequency = qBound(1, m_settings.value("display/updateFrequency", 1).toInt(), 60);
@@ -96,7 +100,7 @@ void AppState::setAutomaticElevation(bool enabled)
     m_settings.setValue("observer/automaticElevation", enabled);
     if (!enabled) {
         ++m_elevationRequest;
-        if (m_elevationBusy) m_elevationStatus = m_settings.value("observer/heightSource", QStringLiteral("海拔待填写")).toString();
+        if (m_elevationBusy) m_elevationStatus = m_settings.value("observer/heightSource", QString::fromUtf8(QT_TR_NOOP("海拔待填写"))).toString();
         m_elevationBusy = false;
     }
     emit elevationChanged();
@@ -116,7 +120,7 @@ void AppState::lookupElevation()
     request.setTransferTimeout(20000);
     auto *reply = m_network.get(request);
     m_elevationBusy = true;
-    m_elevationStatus = QStringLiteral("正在查询地形海拔");
+    m_elevationStatus = QString::fromUtf8(QT_TR_NOOP("正在查询地形海拔"));
     emit elevationChanged();
     connect(reply, &QNetworkReply::finished, this, [this, reply, requestId] {
         reply->deleteLater();
@@ -125,12 +129,12 @@ void AppState::lookupElevation()
         const auto values = QJsonDocument::fromJson(reply->readAll()).object().value("elevation").toArray();
         if (reply->error() == QNetworkReply::NoError && !values.isEmpty() && values[0].isDouble() && std::isfinite(values[0].toDouble())) {
             m_height = values[0].toDouble();
-            m_elevationStatus = QStringLiteral("地形海拔 · Copernicus DEM / EGM2008");
+            m_elevationStatus = QString::fromUtf8(QT_TR_NOOP("地形海拔 · Copernicus DEM / EGM2008"));
             m_settings.setValue("observer/height", m_height);
             m_settings.setValue("observer/heightSource", m_elevationStatus);
             emit observerChanged();
         } else {
-            m_elevationStatus = QStringLiteral("海拔查询失败，可重新查询或手动填写");
+            m_elevationStatus = QString::fromUtf8(QT_TR_NOOP("海拔查询失败，可重新查询或手动填写"));
         }
         emit elevationChanged();
     });
@@ -144,21 +148,45 @@ void AppState::setMinimumElevation(double value)
     emit observerChanged();
 }
 
-QVariantList AppState::savedObservers() const { return m_settings.value("observer/places").toList(); }
+QString AppState::placeName(const QString &name, double latitude, double longitude) const
+{
+    for (const auto &city : worldMapData().cities)
+        if ((name == city.name || name == city.originalName) && std::abs(latitude - city.latitude) < 0.0001
+            && std::abs(longitude - city.longitude) < 0.0001) return city.displayName();
+    if (name == QStringLiteral("地图选点") || name == QStringLiteral("Map location")) return tr("地图选点");
+    return name;
+}
+QString AppState::observerName() const { return placeName(m_observerName, m_latitude, m_longitude); }
+QString AppState::elevationStatus() const { return tr(m_elevationStatus.toUtf8().constData()); }
+QVariantList AppState::savedObservers() const
+{
+    auto places = m_settings.value("observer/places").toList();
+    for (auto &entry : places) {
+        auto place = entry.toMap();
+        place["name"] = placeName(place.value("name").toString(), place.value("latitude").toDouble(), place.value("longitude").toDouble());
+        entry = place;
+    }
+    return places;
+}
 void AppState::saveObserver()
 {
-    auto places = savedObservers();
+    auto places = m_settings.value("observer/places").toList();
     const QVariantMap place{{"name", m_observerName}, {"latitude", m_latitude}, {"longitude", m_longitude},
         {"height", m_height}, {"timeZone", timeZone()}, {"source", m_elevationStatus}};
     bool replaced = false;
-    for (auto &entry : places) if (entry.toMap().value("name").toString() == m_observerName) { entry = place; replaced = true; break; }
+    for (auto &entry : places) {
+        const auto saved = entry.toMap();
+        if (placeName(saved.value("name").toString(), saved.value("latitude").toDouble(), saved.value("longitude").toDouble()) == observerName()) {
+            entry = place; replaced = true; break;
+        }
+    }
     if (!replaced) places.append(place);
     m_settings.setValue("observer/places", places);
     emit observerChanged();
 }
 void AppState::loadObserver(int index)
 {
-    const auto places = savedObservers();
+    const auto places = m_settings.value("observer/places").toList();
     if (index < 0 || index >= places.size()) return;
     const auto place = places[index].toMap();
     setObserver(place.value("name").toString(), place.value("latitude").toDouble(), place.value("longitude").toDouble(),
@@ -171,7 +199,7 @@ void AppState::loadObserver(int index)
 }
 void AppState::removeObserver(int index)
 {
-    auto places = savedObservers();
+    auto places = m_settings.value("observer/places").toList();
     if (index < 0 || index >= places.size()) return;
     places.removeAt(index);
     m_settings.setValue("observer/places", places);
@@ -199,7 +227,7 @@ QString AppState::formatTime(double seconds, const QString &format) const
     return QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(seconds * 1000), m_timeZone).toString(format);
 }
 bool AppState::hasObserverHeight() const { return std::isfinite(m_height); }
-QString AppState::timeZoneName() const { return m_timeZone.displayName(selectedTime(), QTimeZone::LongName, QLocale(QLocale::Chinese)); }
+QString AppState::timeZoneName() const { return m_timeZone.displayName(selectedTime(), QTimeZone::LongName, QLocale()); }
 QStringList AppState::timeZones() const
 {
     QStringList result;
@@ -208,10 +236,10 @@ QStringList AppState::timeZones() const
 }
 QString AppState::offsetText() const
 {
-    if (m_live) return QStringLiteral("当前时刻");
+    if (m_live) return tr("当前时刻");
     const int seconds = m_offset * 60 + m_secondOffset;
-    if (seconds == 0) return QStringLiteral("暂停");
-    return QStringLiteral("%1 %2 h %3 min%4").arg(seconds < 0 ? QStringLiteral("过去") : QStringLiteral("未来"))
+    if (seconds == 0) return tr("暂停");
+    return QStringLiteral("%1 %2 h %3 min%4").arg(seconds < 0 ? tr("过去") : tr("未来"))
         .arg(std::abs(seconds) / 3600).arg(std::abs(seconds) / 60 % 60)
         .arg(m_secondOffset ? QStringLiteral(" %1 s").arg(std::abs(m_secondOffset)) : QString());
 }
@@ -292,7 +320,7 @@ bool AppState::setObserver(const QString &name, double latitude, double longitud
     if (std::isfinite(height)) m_settings.setValue("observer/height", height);
     else m_settings.remove("observer/height");
     m_settings.setValue("observer/timeZone", timeZone);
-    if (!sameHeight) m_elevationStatus = hasObserverHeight() ? QStringLiteral("手动填写 · EGM2008") : QStringLiteral("海拔待查询");
+    if (!sameHeight) m_elevationStatus = hasObserverHeight() ? QString::fromUtf8(QT_TR_NOOP("手动填写 · EGM2008")) : QString::fromUtf8(QT_TR_NOOP("海拔待查询"));
     m_settings.setValue("observer/heightSource", m_elevationStatus);
     emit observerChanged();
     emit timeChanged();
@@ -308,9 +336,27 @@ QVariantList AppState::findCities(const QString &query) const
     for (const auto &city : worldMapData().cities) {
         if (!search.isEmpty() && !city.name.contains(search, Qt::CaseInsensitive) &&
             !city.originalName.contains(search, Qt::CaseInsensitive)) continue;
-        result.append(QVariantMap{{"name", city.name}, {"latitude", city.latitude}, {"longitude", city.longitude},
+        result.append(QVariantMap{{"name", city.displayName()}, {"latitude", city.latitude}, {"longitude", city.longitude},
                                   {"timeZone", QTimeZone(city.timeZone.toUtf8()).isValid() ? city.timeZone : timeZone()}});
         if (result.size() == 60) break;
     }
     return result;
+}
+
+bool AppState::chinese() const { return QLocale().language() == QLocale::Chinese; }
+
+void AppState::setLanguage(const QString &language)
+{
+    if (language == m_language || (language != "system" && language != "zh_CN" && language != "en")) return;
+    m_language = language;
+    m_settings.setValue("appearance/language", language);
+    emit languageChanged();
+}
+
+bool AppState::restart()
+{
+    m_settings.sync();
+    if (!QProcess::startDetached(QCoreApplication::applicationFilePath(), QCoreApplication::arguments().mid(1))) return false;
+    QCoreApplication::quit();
+    return true;
 }

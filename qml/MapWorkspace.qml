@@ -34,13 +34,13 @@ ColumnLayout {
         Layout.rightMargin: 8
         Layout.topMargin: 4
         Label {
-            text: "预览：" + workspace.satellites.previewName + " · " + workspace.satellites.previewTotal
+            text: qsTr("预览：") + workspace.satellites.previewName + " · " + workspace.satellites.previewTotal
             font.pixelSize: 12
             elide: Text.ElideRight
             Layout.fillWidth: true
         }
         ComboBox {
-            model: ["高于最低高度角", "未来 15 min 过境", "显示全部位置"]
+            model: [qsTr("高于最低高度角"), qsTr("未来 15 min 过境"), qsTr("显示全部位置")]
             currentIndex: workspace.satellites.previewMode
             implicitWidth: 160
             implicitHeight: 28
@@ -48,13 +48,13 @@ ColumnLayout {
             onActivated: workspace.satellites.previewMode = currentIndex
         }
         Label {
-            text: workspace.satellites.previewBusy ? "计算中" : workspace.satellites.previewCount + " 个"
+            text: workspace.satellites.previewBusy ? qsTr("计算中") : workspace.satellites.previewCount + qsTr(" 个")
             color: Theme.muted
             font.pixelSize: 11
         }
         IconButton {
             icon.source: "qrc:/icons/x.svg"
-            tip: "结束星座预览"
+            tip: qsTr("结束星座预览")
             onClicked: workspace.satellites.closePreview()
         }
     }
@@ -65,7 +65,7 @@ ColumnLayout {
         Layout.topMargin: 4
         Layout.bottomMargin: 4
         map: worldMap
-        title: workspace.observation.name || "全球地图"
+        title: workspace.observation.name || qsTr("全球地图")
         hasTarget: workspace.satellites.selectedId !== "0"
         expanded: workspace.expanded
         following: workspace.following
@@ -223,7 +223,7 @@ ColumnLayout {
                 onClicked: mouse => {
                     if (workspace.picking) {
                         const point = worldMap.coordinateAt(mouse.x, mouse.y);
-                        workspace.clock.setObserver("地图选点", point.y, point.x, NaN, workspace.clock.timeZone);
+                        workspace.clock.setObserver(qsTr("地图选点"), point.y, point.x, NaN, workspace.clock.timeZone);
                         workspace.picking = false;
                     } else if (dragDistance < 4) {
                         let id = orbitLayer.satelliteAt(mouse.x, mouse.y);

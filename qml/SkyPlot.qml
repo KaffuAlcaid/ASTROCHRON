@@ -45,10 +45,10 @@ Canvas {
         ctx.fillStyle = textColor;
         ctx.font = "11px 'Microsoft YaHei UI'";
         ctx.textAlign = "center";
-        ctx.fillText("北", cx, cy - radius - 8);
-        ctx.fillText("南", cx, cy + radius + 17);
-        ctx.fillText("西", cx - radius - 14, cy + 4);
-        ctx.fillText("东", cx + radius + 14, cy + 4);
+        ctx.fillText(qsTr("北"), cx, cy - radius - 8);
+        ctx.fillText(qsTr("南"), cx, cy + radius + 17);
+        ctx.fillText(qsTr("西"), cx - radius - 14, cy + 4);
+        ctx.fillText(qsTr("东"), cx + radius + 14, cy + 4);
         ctx.textAlign = "left";
         ctx.fillText("30°", cx + 4, cy - radius * 2 / 3 + 12);
         ctx.fillText("60°", cx + 4, cy - radius / 3 + 12);

@@ -4,6 +4,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLocale>
 
 namespace {
 MapMesh readMesh(const QJsonObject &object)
@@ -61,4 +62,9 @@ const MapData &worldMapData()
 {
     static const MapData data = loadMap();
     return data;
+}
+
+QString MapCity::displayName() const
+{
+    return QLocale().language() == QLocale::Chinese || originalName.isEmpty() ? name : originalName;
 }

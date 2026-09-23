@@ -2,6 +2,7 @@
 #include "astronomy.h"
 
 #include <QDateTime>
+#include <QCoreApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QRegularExpression>
@@ -79,7 +80,7 @@ QString formatEpoch(double seconds)
 std::optional<Satellite> fromTle(const QString &name, const QString &first, const QString &second, QString &error)
 {
     if (first.size() < 69 || second.size() < 69 || first.mid(2, 5) != second.mid(2, 5)) {
-        error = QStringLiteral("两行轨道根数的长度或卫星编号不匹配");
+        error = QCoreApplication::translate("Orbit", "两行轨道根数的长度或卫星编号不匹配");
         return std::nullopt;
     }
     for (const auto &line : {first, second}) {
@@ -89,7 +90,7 @@ std::optional<Satellite> fromTle(const QString &name, const QString &first, cons
             else if (line[i] == '-') ++checksum;
         }
         if (!line[68].isDigit() || checksum % 10 != line[68].digitValue()) {
-            error = QStringLiteral("两行轨道根数的校验位不匹配");
+            error = QCoreApplication::translate("Orbit", "两行轨道根数的校验位不匹配");
             return std::nullopt;
         }
     }
@@ -102,11 +103,11 @@ std::optional<Satellite> fromTle(const QString &name, const QString &first, cons
         validNumber = validNumber && prefix >= 10;
         number = prefix * 10000 + suffix;
     }
-    if (!validNumber) { error = QStringLiteral("卫星编号格式无效"); return std::nullopt; }
+    if (!validNumber) { error = QCoreApplication::translate("Orbit", "卫星编号格式无效"); return std::nullopt; }
     for (const auto &[start, length] : {std::pair{8, 8}, {17, 8}, {26, 7}, {34, 8}, {43, 8}, {52, 11}}) {
         bool valid = false;
         second.mid(start, length).trimmed().toDouble(&valid);
-        if (!valid) { error = QStringLiteral("两行轨道根数含有无效数值"); return std::nullopt; }
+        if (!valid) { error = QCoreApplication::translate("Orbit", "两行轨道根数含有无效数值"); return std::nullopt; }
     }
     char line1[130]{}, line2[130]{};
     const auto bytes1 = first.left(69).toLatin1(), bytes2 = second.left(69).toLatin1();
@@ -115,7 +116,7 @@ std::optional<Satellite> fromTle(const QString &name, const QString &first, cons
     elsetrec record{};
     double start = 0, end = 0, step = 0;
     SGP4Funcs::twoline2rv(line1, line2, 'c', 'm', 'i', wgs72, start, end, step, record);
-    if (record.error != 0) { error = QStringLiteral("轨道根数初始化失败（%1）").arg(record.error); return std::nullopt; }
+    if (record.error != 0) { error = QCoreApplication::translate("Orbit", "轨道根数初始化失败（%1）").arg(record.error); return std::nullopt; }
     QString international;
     const auto designator = first.mid(9, 8).trimmed();
     if (designator.size() >= 5) {
@@ -152,13 +153,13 @@ std::optional<Satellite> fromOmm(const QJsonObject &object, QString &error)
 {
     for (const auto *key : {"NORAD_CAT_ID", "MEAN_MOTION", "ECCENTRICITY", "INCLINATION", "RA_OF_ASC_NODE", "ARG_OF_PERICENTER", "MEAN_ANOMALY", "BSTAR"}) {
         if (!object.value(key).isDouble() || !std::isfinite(object.value(key).toDouble())) {
-            error = QStringLiteral("轨道数据缺少有效字段：%1").arg(QString::fromLatin1(key));
+            error = QCoreApplication::translate("Orbit", "轨道数据缺少有效字段：%1").arg(QString::fromLatin1(key));
             return std::nullopt;
         }
     }
     if ((!object.value("TIME_SYSTEM").isUndefined() && object.value("TIME_SYSTEM").toString() != "UTC") ||
         (!object.value("MEAN_ELEMENT_THEORY").isUndefined() && object.value("MEAN_ELEMENT_THEORY").toString() != "SGP4")) {
-        error = QStringLiteral("请选择采用协调世界时和 SGP4 的轨道根数");
+        error = QCoreApplication::translate("Orbit", "请选择采用协调世界时和 SGP4 的轨道根数");
         return std::nullopt;
     }
     Satellite satellite;
@@ -171,7 +172,7 @@ std::optional<Satellite> fromOmm(const QJsonObject &object, QString &error)
     const double inclination = object.value("INCLINATION").toDouble();
     if (!std::isfinite(satellite.epoch) || satellite.number < 1 || satellite.number > 999999999 ||
         motion <= 0 || eccentricity < 0 || eccentricity >= 1 || inclination < 0 || inclination > 180) {
-        error = QStringLiteral("轨道根数的历元、编号或数值范围无效");
+        error = QCoreApplication::translate("Orbit", "轨道根数的历元、编号或数值范围无效");
         return std::nullopt;
     }
     // The upstream identifier buffer is five characters; full catalog IDs stay in our data model.
@@ -182,7 +183,7 @@ std::optional<Satellite> fromOmm(const QJsonObject &object, QString &error)
         object.value("MEAN_ANOMALY").toDouble() * rad, motion * pi / 720.0,
         object.value("RA_OF_ASC_NODE").toDouble() * rad, satellite.constants);
     if (!initialized || satellite.constants.error) {
-        error = QStringLiteral("轨道根数初始化失败（%1）").arg(satellite.constants.error);
+        error = QCoreApplication::translate("Orbit", "轨道根数初始化失败（%1）").arg(satellite.constants.error);
         return std::nullopt;
     }
     return satellite;
@@ -201,7 +202,7 @@ QVector<Satellite> parse(const QByteArray &data, QString &error, int &skipped)
     if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
         QJsonParseError jsonError;
         const auto document = QJsonDocument::fromJson(trimmed, &jsonError);
-        if (jsonError.error != QJsonParseError::NoError) { error = QStringLiteral("JSON 格式无效：%1").arg(jsonError.errorString()); return {}; }
+        if (jsonError.error != QJsonParseError::NoError) { error = QCoreApplication::translate("Orbit", "JSON 格式无效：%1").arg(jsonError.errorString()); return {}; }
         const QJsonArray array = document.isArray() ? document.array() : QJsonArray{document.object()};
         for (const auto value : array) accept(fromOmm(value.toObject(), error));
     } else {
@@ -209,13 +210,13 @@ QVector<Satellite> parse(const QByteArray &data, QString &error, int &skipped)
         QString name;
         for (qsizetype i = 0; i < lines.size(); ++i) {
             if (lines[i].startsWith("1 ")) {
-                if (i + 1 >= lines.size() || !lines[i + 1].startsWith("2 ")) { ++skipped; error = QStringLiteral("两行轨道根数缺少第二行"); continue; }
+                if (i + 1 >= lines.size() || !lines[i + 1].startsWith("2 ")) { ++skipped; error = QCoreApplication::translate("Orbit", "两行轨道根数缺少第二行"); continue; }
                 accept(fromTle(name, lines[i], lines[i + 1], error));
                 ++i; name.clear();
             } else if (!lines[i].startsWith('#')) name = lines[i].startsWith("0 ") ? lines[i].mid(2).trimmed() : lines[i].trimmed();
         }
     }
-    if (result.isEmpty() && error.isEmpty() && trimmed != "[]") error = QStringLiteral("文件中没有可用的轨道根数");
+    if (result.isEmpty() && error.isEmpty() && trimmed != "[]") error = QCoreApplication::translate("Orbit", "文件中没有可用的轨道根数");
     if (!result.isEmpty()) error.clear();
     return result;
 }
@@ -343,23 +344,23 @@ Track track(const Satellite &satellite, double start, double end, const Observer
 
 QString displayName(const Satellite &satellite)
 {
-    if (satellite.number == 25544) return QStringLiteral("国际空间站");
-    if (satellite.number == 48274) return QStringLiteral("天和核心舱（CSS）");
-    if (satellite.number == 36086) return QStringLiteral("探索号实验舱");
-    if (satellite.number == 49044) return QStringLiteral("科学号实验舱");
-    if (satellite.number == 53239) return QStringLiteral("问天实验舱");
-    if (satellite.number == 54216) return QStringLiteral("梦天实验舱");
-    if (satellite.number == 20580) return QStringLiteral("哈勃空间望远镜");
+    if (satellite.number == 25544) return QCoreApplication::translate("Orbit", "国际空间站");
+    if (satellite.number == 48274) return QCoreApplication::translate("Orbit", "天和核心舱（CSS）");
+    if (satellite.number == 36086) return QCoreApplication::translate("Orbit", "探索号实验舱");
+    if (satellite.number == 49044) return QCoreApplication::translate("Orbit", "科学号实验舱");
+    if (satellite.number == 53239) return QCoreApplication::translate("Orbit", "问天实验舱");
+    if (satellite.number == 54216) return QCoreApplication::translate("Orbit", "梦天实验舱");
+    if (satellite.number == 20580) return QCoreApplication::translate("Orbit", "哈勃空间望远镜");
     return satellite.name;
 }
 QString illuminationName(int value)
 {
-    return value == 2 ? QStringLiteral("地球阴影") : value == 1 ? QStringLiteral("半影") : QStringLiteral("阳光照射");
+    return value == 2 ? QCoreApplication::translate("Orbit", "地球阴影") : value == 1 ? QCoreApplication::translate("Orbit", "半影") : QCoreApplication::translate("Orbit", "阳光照射");
 }
 QString directionName(double azimuth)
 {
-    static const QStringList names{QStringLiteral("北"), QStringLiteral("东北"), QStringLiteral("东"), QStringLiteral("东南"),
-                                   QStringLiteral("南"), QStringLiteral("西南"), QStringLiteral("西"), QStringLiteral("西北")};
+    static const QStringList names{QCoreApplication::translate("Orbit", "北"), QCoreApplication::translate("Orbit", "东北"), QCoreApplication::translate("Orbit", "东"), QCoreApplication::translate("Orbit", "东南"),
+                                   QCoreApplication::translate("Orbit", "南"), QCoreApplication::translate("Orbit", "西南"), QCoreApplication::translate("Orbit", "西"), QCoreApplication::translate("Orbit", "西北")};
     return names[static_cast<int>(std::lround(azimuth / 45.0)) % 8];
 }
 }

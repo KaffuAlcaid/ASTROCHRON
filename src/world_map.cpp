@@ -163,7 +163,8 @@ void WorldMap::updateLabels()
             if (city.rank > maxRank) continue;
             const auto point = screenPosition(city.longitude, city.latitude);
             if (point.x() < 5 || point.x() > width() - 5 || point.y() < 5 || point.y() > height() - 5) continue;
-            const auto textWidth = metrics.horizontalAdvance(city.name);
+            const auto name = city.displayName();
+            const auto textWidth = metrics.horizontalAdvance(name);
             for (const auto offset : {QPointF(5, -16), QPointF(-textWidth - 5, -16), QPointF(5, 3)}) {
                 const QRectF box(point + offset, QSizeF(textWidth, metrics.height()));
                 if (!QRectF(3, 3, width() - 6, height() - 6).contains(box)) continue;
@@ -171,7 +172,7 @@ void WorldMap::updateLabels()
                     return other.intersects(box.adjusted(-4, -3, 4, 3));
                 })) continue;
                 occupied.append(box);
-                labels.append(QVariantMap{{"name", city.name}, {"x", box.x()}, {"y", box.y()},
+                labels.append(QVariantMap{{"name", name}, {"x", box.x()}, {"y", box.y()},
                                            {"pointX", point.x()}, {"pointY", point.y()}});
                 break;
             }

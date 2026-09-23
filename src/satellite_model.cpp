@@ -68,7 +68,7 @@ SatelliteModel::SatelliteModel(QObject *parent) : QAbstractListModel(parent)
     int skipped = 0;
     if (magnitudes.open(QIODevice::ReadOnly))
         m_defaultPhotometry = readMagnitudes(magnitudes, {0, 0, QStringLiteral("Mike McCants / QuickSat"), false, QStringLiteral("2020-09-14")}, skipped);
-    m_defaultPhotometry.insert(48274, {0.87, 0, QStringLiteral("SeeSat-L / Jay Respler（2022 年构型）"), false, QStringLiteral("2022-08-03"), 0, QStringLiteral("2021-035A")});
+    m_defaultPhotometry.insert(48274, {0.87, 0, tr("SeeSat-L / Jay Respler（2022 年构型）"), false, QStringLiteral("2022-08-03"), 0, QStringLiteral("2021-035A")});
     m_pool.setMaxThreadCount(2);
     m_watchlist = m_settings.value("watchlist/ids", QStringList{"25544", "48274"}).toStringList();
     m_watchlist.removeDuplicates();
@@ -77,18 +77,18 @@ SatelliteModel::SatelliteModel(QObject *parent) : QAbstractListModel(parent)
     QDir().mkpath(directory);
     m_database = QSqlDatabase::addDatabase("QSQLITE", QStringLiteral("orbits-%1").arg(reinterpret_cast<quintptr>(this)));
     m_database.setDatabaseName(directory + "/orbits.sqlite");
-    if (!m_database.open()) { setStatus(QStringLiteral("轨道资料库打开失败：") + m_database.lastError().text()); return; }
+    if (!m_database.open()) { setStatus(tr("轨道资料库打开失败：") + m_database.lastError().text()); return; }
     QSqlQuery query(m_database);
     if (!query.exec("CREATE TABLE IF NOT EXISTS snapshots (id INTEGER PRIMARY KEY, group_key TEXT NOT NULL, acquired INTEGER NOT NULL, source TEXT NOT NULL, payload BLOB NOT NULL)"))
-        setStatus(QStringLiteral("轨道资料库初始化失败：") + query.lastError().text());
+        setStatus(tr("轨道资料库初始化失败：") + query.lastError().text());
     if (!query.exec("CREATE TABLE IF NOT EXISTS photometry (norad INTEGER PRIMARY KEY, magnitude REAL NOT NULL, phase INTEGER NOT NULL, source TEXT NOT NULL, manual INTEGER NOT NULL, source_date TEXT NOT NULL DEFAULT '', recorded_at INTEGER NOT NULL DEFAULT 0)")) {
-        m_photometryStatus = QStringLiteral("星等资料库打开失败：") + query.lastError().text();
+        m_photometryStatus = tr("星等资料库打开失败：") + query.lastError().text();
         return;
     }
     const auto columns = m_database.record("photometry");
     if ((!columns.contains("source_date") && !query.exec("ALTER TABLE photometry ADD COLUMN source_date TEXT NOT NULL DEFAULT ''"))
         || (!columns.contains("recorded_at") && !query.exec("ALTER TABLE photometry ADD COLUMN recorded_at INTEGER NOT NULL DEFAULT 0"))) {
-        m_photometryStatus = QStringLiteral("星等资料日期保存失败：") + query.lastError().text();
+        m_photometryStatus = tr("星等资料日期保存失败：") + query.lastError().text();
         return;
     }
     if (query.exec("SELECT norad, magnitude, phase, source, manual, source_date, recorded_at FROM photometry"))
@@ -118,7 +118,7 @@ QVariant SatelliteModel::data(const QModelIndex &index, int role) const
     case IdRole: return QString::number(satellite.number);
     case NameRole: return Orbit::displayName(satellite);
     case OriginalRole: return satellite.name;
-    case ElevationRole: return m_elevations.contains(satellite.number) ? number(m_elevations.value(satellite.number), 1) + QStringLiteral("°") : QStringLiteral("待计算");
+    case ElevationRole: return m_elevations.contains(satellite.number) ? number(m_elevations.value(satellite.number), 1) + QStringLiteral("°") : tr("待计算");
     default: return {};
     }
 }
@@ -127,19 +127,19 @@ QVariantList SatelliteModel::groups() const
 {
     QVariantList result;
     const std::pair<const char *, const char *> groups[] = {
-        {"catalog", "本地完整目录"}, {"active", "活动卫星（CelesTrak）"}, {"stations", "空间站"}, {"visual", "明亮目标"},
-        {"weather", "气象卫星"}, {"noaa", "美国气象卫星"}, {"goes", "地球静止气象卫星"},
-        {"resource", "地球资源卫星"}, {"sarsat", "搜救卫星"}, {"dmc", "灾害监测卫星"},
-        {"starlink", "星链"}, {"oneweb", "一网"}, {"iridium-NEXT", "铱星二代"},
-        {"qianfan", "千帆"}, {"hulianwang", "互联网低轨"}, {"kuiper", "柯伊伯"}, {"sar", "合成孔径雷达"},
-        {"intelsat", "国际通信卫星"}, {"geo", "地球同步卫星"}, {"amateur", "业余无线电卫星"},
-        {"gnss", "全球导航卫星"}, {"gps-ops", "GPS 运行组"}, {"glo-ops", "GLONASS 运行组"},
-        {"galileo", "伽利略"}, {"beidou", "北斗"}, {"science", "科学卫星"},
-        {"engineering", "技术试验卫星"}, {"education", "教育卫星"}, {"cubesat", "立方星"},
-        {"radar", "雷达标定卫星"}, {"other", "其他卫星"}, {"last-30-days", "最近发射"}
+        {"catalog", QT_TR_NOOP("本地完整目录")}, {"active", QT_TR_NOOP("活动卫星（CelesTrak）")}, {"stations", QT_TR_NOOP("空间站")}, {"visual", QT_TR_NOOP("明亮目标")},
+        {"weather", QT_TR_NOOP("气象卫星")}, {"noaa", QT_TR_NOOP("美国气象卫星")}, {"goes", QT_TR_NOOP("地球静止气象卫星")},
+        {"resource", QT_TR_NOOP("地球资源卫星")}, {"sarsat", QT_TR_NOOP("搜救卫星")}, {"dmc", QT_TR_NOOP("灾害监测卫星")},
+        {"starlink", QT_TR_NOOP("星链")}, {"oneweb", QT_TR_NOOP("一网")}, {"iridium-NEXT", QT_TR_NOOP("铱星二代")},
+        {"qianfan", QT_TR_NOOP("千帆")}, {"hulianwang", QT_TR_NOOP("互联网低轨")}, {"kuiper", QT_TR_NOOP("柯伊伯")}, {"sar", QT_TR_NOOP("合成孔径雷达")},
+        {"intelsat", QT_TR_NOOP("国际通信卫星")}, {"geo", QT_TR_NOOP("地球同步卫星")}, {"amateur", QT_TR_NOOP("业余无线电卫星")},
+        {"gnss", QT_TR_NOOP("全球导航卫星")}, {"gps-ops", QT_TR_NOOP("GPS 运行组")}, {"glo-ops", QT_TR_NOOP("GLONASS 运行组")},
+        {"galileo", QT_TR_NOOP("伽利略")}, {"beidou", QT_TR_NOOP("北斗")}, {"science", QT_TR_NOOP("科学卫星")},
+        {"engineering", QT_TR_NOOP("技术试验卫星")}, {"education", QT_TR_NOOP("教育卫星")}, {"cubesat", QT_TR_NOOP("立方星")},
+        {"radar", QT_TR_NOOP("雷达标定卫星")}, {"other", QT_TR_NOOP("其他卫星")}, {"last-30-days", QT_TR_NOOP("最近发射")}
     };
-    for (const auto &[key, name] : groups) result.append(QVariantMap{{"key", QString::fromLatin1(key)}, {"name", QString::fromUtf8(name)}});
-    result.append(QVariantMap{{"key", "local"}, {"name", QStringLiteral("本地轨道文件")}});
+    for (const auto &[key, name] : groups) result.append(QVariantMap{{"key", QString::fromLatin1(key)}, {"name", tr(name)}});
+    result.append(QVariantMap{{"key", "local"}, {"name", tr("本地轨道文件")}});
     return result;
 }
 
@@ -151,12 +151,12 @@ bool SatelliteModel::usingLocalConstellation() const
 
 QVariantMap SatelliteModel::groupInfo() const
 {
-    if (m_group == "catalog") return {{"description", QStringLiteral("各来源按卫星编号合并，空间站组合体合并显示")}};
+    if (m_group == "catalog") return {{"description", tr("各来源按卫星编号合并，空间站组合体合并显示")}};
     const auto source = m_groupSources.value(m_group);
     const bool operational = m_group == "gps-ops" || m_group == "glo-ops";
-    return {{"description", usingLocalConstellation() ? QStringLiteral("当前显示：本地目录中的%1对象").arg(CatalogModel::constellationName(m_group))
-                                        : operational ? QStringLiteral("运行组采用 CelesTrak 分组，实时导航健康状态以系统公告为准")
-                                        : m_group == "local" ? QStringLiteral("所选本地轨道文件中的对象") : QStringLiteral("CelesTrak 所选分组中的对象")},
+    return {{"description", usingLocalConstellation() ? tr("当前显示：本地目录中的%1对象").arg(CatalogModel::constellationName(m_group))
+                                        : operational ? tr("运行组采用 CelesTrak 分组，实时导航健康状态以系统公告为准")
+                                        : m_group == "local" ? tr("所选本地轨道文件中的对象") : tr("CelesTrak 所选分组中的对象")},
         {"localMembers", usingLocalConstellation()},
         {"acquired", source.acquired ? QDateTime::fromSecsSinceEpoch(source.acquired, QTimeZone::UTC).toString("yyyy-MM-dd HH:mm:ss 'UTC'") : QString()},
         {"source", source.url}, {"loaded", m_groupMembers.contains(m_group)},
@@ -232,7 +232,7 @@ void SatelliteModel::setGroup(const QString &group)
     if (query.exec() && query.next()) loadSnapshot(query.value(0).toLongLong());
     else {
         if (group != "local") refresh();
-        else setStatus(QStringLiteral("请选择轨道文件"));
+        else setStatus(tr("请选择轨道文件"));
     }
     emit catalogChanged();
 }
@@ -249,7 +249,7 @@ void SatelliteModel::refresh()
     const qint64 acquired = latest.exec() && latest.next() ? latest.value(0).toLongLong() : 0;
     const qint64 nextRequest = std::max(acquired ? acquired + 7200 : 0, m_retryAfter.value(group));
     if (now < nextRequest) {
-        setStatus(QStringLiteral("下次可更新：%1").arg(QDateTime::fromSecsSinceEpoch(nextRequest).toString("HH:mm:ss")));
+        setStatus(tr("下次可更新：%1").arg(QDateTime::fromSecsSinceEpoch(nextRequest).toString("HH:mm:ss")));
         return;
     }
     QUrl url("https://celestrak.org/NORAD/elements/gp.php");
@@ -258,7 +258,7 @@ void SatelliteModel::refresh()
     request.setHeader(QNetworkRequest::UserAgentHeader, "ASTROCHRON/0.1 (satellite observation)");
     auto *reply = m_network.get(request);
     m_downloading = true;
-    setStatus(QStringLiteral("正在获取轨道数据"));
+    setStatus(tr("正在获取轨道数据"));
     connect(reply, &QNetworkReply::finished, this, [this, reply, group, url] {
         reply->deleteLater(); m_downloading = false;
         const auto finishedAt = QDateTime::currentSecsSinceEpoch();
@@ -274,23 +274,23 @@ void SatelliteModel::refresh()
         if (reply->error() != QNetworkReply::NoError) {
             const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             if (httpStatus >= 500)
-                setStatus(QStringLiteral("CelesTrak 服务暂时异常（HTTP %1），本地轨道资料仍可使用").arg(httpStatus));
+                setStatus(tr("CelesTrak 服务暂时异常（HTTP %1），本地轨道资料仍可使用").arg(httpStatus));
             else if (httpStatus > 0)
-                setStatus(QStringLiteral("CelesTrak 请求失败（HTTP %1），本地轨道资料仍可使用").arg(httpStatus));
+                setStatus(tr("CelesTrak 请求失败（HTTP %1），本地轨道资料仍可使用").arg(httpStatus));
             else
-                setStatus(QStringLiteral("轨道数据获取失败：网络连接异常（错误 %1），本地轨道资料仍可使用").arg(static_cast<int>(reply->error())));
+                setStatus(tr("轨道数据获取失败：网络连接异常（错误 %1），本地轨道资料仍可使用").arg(static_cast<int>(reply->error())));
             return;
         }
         const auto payload = reply->readAll();
         QString error; int skipped = 0;
         auto satellites = Orbit::parse(payload, error, skipped);
-        if (satellites.isEmpty()) { setStatus(error.isEmpty() ? QStringLiteral("数据源当前没有目标") : error); return; }
+        if (satellites.isEmpty()) { setStatus(error.isEmpty() ? tr("数据源当前没有目标") : error); return; }
         const auto count = satellites.size();
         if (!store(payload, url.toString(), group)) return;
         m_retryAfter.remove(group);
         install(std::move(satellites), Source{group, url.toString(), m_snapshot});
-        const auto summary = QStringLiteral("目录已获取 %1 条根数").arg(count);
-        setStatus(summary + (skipped ? QStringLiteral("，%1 条根数格式异常").arg(skipped) : QString()));
+        const auto summary = tr("目录已获取 %1 条根数").arg(count);
+        setStatus(summary + (skipped ? tr("，%1 条根数格式异常").arg(skipped) : QString()));
     });
 }
 
@@ -299,7 +299,7 @@ bool SatelliteModel::store(const QByteArray &payload, const QString &source, con
     QSqlQuery query(m_database);
     query.prepare("INSERT INTO snapshots (group_key, acquired, source, payload) VALUES (?, ?, ?, ?)");
     query.addBindValue(group); query.addBindValue(QDateTime::currentSecsSinceEpoch()); query.addBindValue(source); query.addBindValue(payload);
-    if (!query.exec()) { setStatus(QStringLiteral("轨道资料保存失败：") + query.lastError().text()); return false; }
+    if (!query.exec()) { setStatus(tr("轨道资料保存失败：") + query.lastError().text()); return false; }
     m_snapshot = query.lastInsertId().toLongLong(); m_source = source;
     return true;
 }
@@ -307,26 +307,26 @@ bool SatelliteModel::store(const QByteArray &payload, const QString &source, con
 void SatelliteModel::importFile(const QUrl &url)
 {
     QFile file(url.toLocalFile());
-    if (!file.open(QIODevice::ReadOnly)) { setStatus(QStringLiteral("轨道文件打开失败：") + file.errorString()); return; }
+    if (!file.open(QIODevice::ReadOnly)) { setStatus(tr("轨道文件打开失败：") + file.errorString()); return; }
     const auto payload = file.readAll();
     QString error; int skipped = 0;
     auto satellites = Orbit::parse(payload, error, skipped);
-    if (satellites.isEmpty()) { setStatus(error.isEmpty() ? QStringLiteral("文件内没有卫星根数") : error); return; }
+    if (satellites.isEmpty()) { setStatus(error.isEmpty() ? tr("文件内没有卫星根数") : error); return; }
     if (!store(payload, QFileInfo(file).fileName(), "local")) return;
     setGroup("local");
-    setStatus(QStringLiteral("轨道文件已加入目录%1").arg(skipped ? QStringLiteral("，%1 条根数格式异常").arg(skipped) : QString()));
+    setStatus(tr("轨道文件已加入目录%1").arg(skipped ? tr("，%1 条根数格式异常").arg(skipped) : QString()));
 }
 
 void SatelliteModel::exportSelected(const QUrl &url)
 {
     const auto *satellite = selected(); if (!satellite) return;
     QFile file(url.toLocalFile());
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) { setStatus(QStringLiteral("文件保存失败：") + file.errorString()); return; }
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) { setStatus(tr("文件保存失败：") + file.errorString()); return; }
     QJsonArray elements;
     for (const int member : m_members.value(satellite->number)) elements.append(m_satellites[member].elements);
     const auto bytes = QJsonDocument(elements).toJson(QJsonDocument::Indented);
-    if (file.write(bytes) != bytes.size()) { setStatus(QStringLiteral("轨道文件写入失败：") + file.errorString()); return; }
-    setStatus(QStringLiteral("轨道根数已保存"));
+    if (file.write(bytes) != bytes.size()) { setStatus(tr("轨道文件写入失败：") + file.errorString()); return; }
+    setStatus(tr("轨道根数已保存"));
 }
 
 QVariantList SatelliteModel::snapshots() const
@@ -351,7 +351,7 @@ void SatelliteModel::loadSnapshot(qint64 id)
     if (satellites.isEmpty()) { setStatus(error); return; }
     m_snapshot = id; m_source = query.value(1).toString();
     install(std::move(satellites), Source{query.value(2).toString(), m_source, id});
-    setStatus(QStringLiteral("本地轨道数据已载入"));
+    setStatus(tr("本地轨道数据已载入"));
     emit catalogChanged();
 }
 
@@ -616,7 +616,7 @@ void SatelliteModel::requestFrame()
     const bool hasHeight = m_clock->hasObserverHeight();
     const auto previewCandidates = m_previewCandidates;
     const int previewMode = m_previewMode;
-    if (!std::isfinite(observer.heightKm)) { setStatus(QStringLiteral("大地水准面数据读取失败")); return; }
+    if (!std::isfinite(observer.heightKm)) { setStatus(tr("大地水准面数据读取失败")); return; }
     m_busy = true; m_pending = false; m_needTrack = false;
     emit statusChanged();
     m_pool.start([this, satellites, gnss, calculateGnss, id, revision, time, reference, observer, zone, calculateTrack, hasHeight, watchIds, previewCandidates, previewMode] {
@@ -645,11 +645,11 @@ void SatelliteModel::requestFrame()
             observation.insert("originalName", satellite.name);
             observation.insert("lighting", Orbit::illuminationName(state->illumination));
             observation.insert("direction", Orbit::directionName(state->azimuth));
-            observation.insert("motion", state->rangeRate < 0 ? QStringLiteral("正在接近") : QStringLiteral("正在远离"));
+            observation.insert("motion", state->rangeRate < 0 ? tr("正在接近") : tr("正在远离"));
             observation.insert("epochAge", (time - satellite.epoch) / 86400.0);
             observation.insert("heightEstimated", !hasHeight);
-            observation.insert("visibility", state->elevation < observer.minimumElevation ? QStringLiteral("低于最低高度角")
-                : state->illumination != 0 ? QStringLiteral("位于地影") : state->sunElevation > -6 ? QStringLiteral("天空较亮") : QStringLiteral("具备光照观测条件"));
+            observation.insert("visibility", state->elevation < observer.minimumElevation ? tr("低于最低高度角")
+                : state->illumination != 0 ? tr("位于地影") : state->sunElevation > -6 ? tr("天空较亮") : tr("具备光照观测条件"));
             if (calculateTrack) {
                 const auto track = Orbit::track(satellite, reference - 43200, reference + 43200, observer);
                 for (const auto &sample : track.samples) trajectory.append(stateMap(sample));
@@ -668,7 +668,7 @@ void SatelliteModel::requestFrame()
                         }
                         const double eventTime = (left + right) / 2;
                         shadowEvents.append(QVariantMap{{"time", eventTime}, {"timeText", formatTime(eventTime, zone)}, {"entering", after}, {"umbra", boundary == 2},
-                            {"name", (after ? QStringLiteral("进入") : QStringLiteral("离开")) + (boundary == 2 ? QStringLiteral("本影") : QStringLiteral("半影"))}});
+                            {"name", (after ? tr("进入") : tr("离开")) + (boundary == 2 ? tr("本影") : tr("半影"))}});
                     }
                 }
                 std::sort(shadowEvents.begin(), shadowEvents.end(), [](const QVariant &a, const QVariant &b) { return a.toMap().value("time").toDouble() < b.toMap().value("time").toDouble(); });
@@ -678,15 +678,15 @@ void SatelliteModel::requestFrame()
                         visible.append(formatTime(interval[0], zone, "HH:mm:ss") + " - " + formatTime(interval[1], zone, "HH:mm:ss"));
                     passes.append(QVariantMap{{"start", pass.rise.time}, {"peak", pass.peak.time}, {"end", pass.set.time},
                         {"startClipped", pass.startsBeforeWindow}, {"endClipped", pass.endsAfterWindow},
-                        {"startText", (pass.startsBeforeWindow ? QStringLiteral("早于 ") : QString()) + formatTime(pass.rise.time, zone)},
+                        {"startText", (pass.startsBeforeWindow ? tr("早于 ") : QString()) + formatTime(pass.rise.time, zone)},
                         {"peakText", formatTime(pass.peak.time, zone)},
-                        {"endText", (pass.endsAfterWindow ? QStringLiteral("晚于 ") : QString()) + formatTime(pass.set.time, zone)},
+                        {"endText", (pass.endsAfterWindow ? tr("晚于 ") : QString()) + formatTime(pass.set.time, zone)},
                         {"startAz", Orbit::directionName(pass.rise.azimuth) + " " + number(pass.rise.azimuth, 1) + QStringLiteral("°")},
                         {"endAz", Orbit::directionName(pass.set.azimuth) + " " + number(pass.set.azimuth, 1) + QStringLiteral("°")},
                         {"maximum", number(pass.peak.elevation, 1) + QStringLiteral("°")},
                         {"duration", number((pass.set.time - pass.rise.time) / 60, 1) + QStringLiteral(" min")},
                         {"range", number(pass.peak.range, 0) + QStringLiteral(" km")}, {"hasOptical", !visible.isEmpty()},
-                        {"optical", visible.isEmpty() ? QStringLiteral("光照条件欠佳") : visible.join(" / ")}});
+                        {"optical", visible.isEmpty() ? tr("光照条件欠佳") : visible.join(" / ")}});
                 }
             }
         }
@@ -730,7 +730,8 @@ QVariantMap SatelliteModel::photometry() const
     const auto base = m_defaultPhotometry.constFind(m_selected);
     const auto *satellite = selected();
     const bool hasDefault = base != m_defaultPhotometry.cend() && satellite && !base->internationalId.isEmpty() && base->internationalId == satellite->internationalId;
-    return {{"magnitude", entry->magnitude}, {"phase", entry->phase}, {"source", entry->source}, {"manual", entry->manual},
+    const auto source = entry->manual && entry->source == QStringLiteral("手动填写") ? tr("手动填写") : entry->source;
+    return {{"magnitude", entry->magnitude}, {"phase", entry->phase}, {"source", source}, {"manual", entry->manual},
         {"builtin", !m_photometry.contains(m_selected)}, {"hasOverride", m_photometry.contains(m_selected)}, {"hasDefault", hasDefault},
         {"sourceDate", entry->sourceDate}, {"recordedAt", entry->recordedAt ? QDateTime::fromSecsSinceEpoch(entry->recordedAt, QTimeZone::UTC).toString("yyyy-MM-dd HH:mm:ss 'UTC'") : QString()}};
 }
@@ -740,7 +741,7 @@ bool SatelliteModel::setPhotometry(double magnitude, int phase, const QString &s
     if (!selected() || !std::isfinite(magnitude) || magnitude < -30 || magnitude > 30 || (phase != 0 && phase != 90)) return false;
     const auto date = sourceDate.trimmed();
     if (!date.isEmpty() && (!QDate::fromString(date, Qt::ISODate).isValid() || QDate::fromString(date, Qt::ISODate).toString(Qt::ISODate) != date)) {
-        m_photometryStatus = QStringLiteral("请填写有效的资料日期（YYYY-MM-DD）");
+        m_photometryStatus = tr("请填写有效的资料日期（YYYY-MM-DD）");
         emit photometryChanged(); return false;
     }
     const QString label = source.trimmed().isEmpty() ? QStringLiteral("手动填写") : source.trimmed();
@@ -750,11 +751,11 @@ bool SatelliteModel::setPhotometry(double magnitude, int phase, const QString &s
     query.addBindValue(m_selected); query.addBindValue(magnitude); query.addBindValue(phase); query.addBindValue(label);
     query.addBindValue(date.isEmpty() ? QStringLiteral("") : date); query.addBindValue(recordedAt);
     if (!query.exec()) {
-        m_photometryStatus = QStringLiteral("星等参数保存失败：") + query.lastError().text();
+        m_photometryStatus = tr("星等参数保存失败：") + query.lastError().text();
         emit photometryChanged(); return false;
     }
     m_photometry.insert(m_selected, {magnitude, phase, label, true, date, recordedAt});
-    m_photometryStatus = QStringLiteral("星等参数已保存");
+    m_photometryStatus = tr("星等参数已保存");
     updateMagnitude(); emit frameChanged(); emit photometryChanged();
     return true;
 }
@@ -764,11 +765,11 @@ bool SatelliteModel::clearPhotometry()
     QSqlQuery query(m_database);
     query.prepare("DELETE FROM photometry WHERE norad = ?"); query.addBindValue(m_selected);
     if (!query.exec()) {
-        m_photometryStatus = QStringLiteral("星等参数清除失败：") + query.lastError().text();
+        m_photometryStatus = tr("星等参数清除失败：") + query.lastError().text();
         emit photometryChanged(); return false;
     }
     m_photometry.remove(m_selected);
-    m_photometryStatus = selectedPhotometry() ? QStringLiteral("使用内置星等资料") : QStringLiteral("星等参数已清除");
+    m_photometryStatus = selectedPhotometry() ? tr("使用内置星等资料") : tr("星等参数已清除");
     updateMagnitude(); emit frameChanged(); emit photometryChanged();
     return true;
 }
@@ -804,14 +805,14 @@ bool SatelliteModel::importMagnitudes(const QUrl &url, const QString &sourceDate
     const auto fail = [this](const QString &message) { m_photometryStatus = message; emit photometryChanged(); return false; };
     const auto date = sourceDate.trimmed();
     if (!date.isEmpty() && (!QDate::fromString(date, Qt::ISODate).isValid() || QDate::fromString(date, Qt::ISODate).toString(Qt::ISODate) != date))
-        return fail(QStringLiteral("请填写有效的资料日期（YYYY-MM-DD）"));
+        return fail(tr("请填写有效的资料日期（YYYY-MM-DD）"));
     const auto recordedAt = QDateTime::currentSecsSinceEpoch();
     QFile file(url.toLocalFile());
-    if (!file.open(QIODevice::ReadOnly)) return fail(QStringLiteral("星等表打开失败：") + file.errorString());
+    if (!file.open(QIODevice::ReadOnly)) return fail(tr("星等表打开失败：") + file.errorString());
     int skipped = 0, preserved = 0;
     auto entries = readMagnitudes(file, {0, 0, QStringLiteral("QuickSat · ") + QFileInfo(file).fileName(), false, date, recordedAt}, skipped);
-    if (entries.isEmpty()) return fail(QStringLiteral("文件中没有可用的 QuickSat 星等记录"));
-    if (!m_database.transaction()) return fail(QStringLiteral("星等资料库写入失败：") + m_database.lastError().text());
+    if (entries.isEmpty()) return fail(tr("文件中没有可用的 QuickSat 星等记录"));
+    if (!m_database.transaction()) return fail(tr("星等资料库写入失败：") + m_database.lastError().text());
     QSqlQuery query(m_database);
     query.prepare("INSERT OR REPLACE INTO photometry (norad, magnitude, phase, source, manual, source_date, recorded_at) VALUES (?, ?, ?, ?, 0, ?, ?)");
     for (auto it = entries.begin(); it != entries.end();) {
@@ -819,13 +820,13 @@ bool SatelliteModel::importMagnitudes(const QUrl &url, const QString &sourceDate
         query.bindValue(0, it.key()); query.bindValue(1, it->magnitude); query.bindValue(2, it->phase); query.bindValue(3, it->source);
         query.bindValue(4, date.isEmpty() ? QStringLiteral("") : date); query.bindValue(5, recordedAt);
         if (!query.exec()) {
-            m_database.rollback(); return fail(QStringLiteral("星等表导入失败：") + query.lastError().text());
+            m_database.rollback(); return fail(tr("星等表导入失败：") + query.lastError().text());
         }
         ++it;
     }
-    if (!m_database.commit()) { m_database.rollback(); return fail(QStringLiteral("星等表保存失败：") + m_database.lastError().text()); }
+    if (!m_database.commit()) { m_database.rollback(); return fail(tr("星等表保存失败：") + m_database.lastError().text()); }
     for (auto it = entries.cbegin(); it != entries.cend(); ++it) m_photometry.insert(it.key(), it.value());
-    m_photometryStatus = QStringLiteral("已导入 %1 条星等记录，保留 %2 条手动参数，跳过 %3 行空缺或格式异常记录").arg(entries.size()).arg(preserved).arg(skipped);
+    m_photometryStatus = tr("已导入 %1 条星等记录，保留 %2 条手动参数，跳过 %3 行空缺或格式异常记录").arg(entries.size()).arg(preserved).arg(skipped);
     updateMagnitude(); emit frameChanged(); emit photometryChanged();
     return true;
 }
@@ -836,10 +837,10 @@ void SatelliteModel::updateMagnitude()
     if (!m_observation.contains("range")) return;
     QString status;
     const auto *entry = selectedPhotometry();
-    if (!entry) status = QStringLiteral("暂无参考星等");
-    else if (m_observation.value("elevation").toDouble() <= 0) status = QStringLiteral("地平线下");
-    else if (m_observation.value("illumination").toInt() == 2) status = QStringLiteral("本影内");
-    else if (m_observation.value("illumination").toInt() == 1) status = QStringLiteral("半影内");
+    if (!entry) status = tr("暂无参考星等");
+    else if (m_observation.value("elevation").toDouble() <= 0) status = tr("地平线下");
+    else if (m_observation.value("illumination").toInt() == 2) status = tr("本影内");
+    else if (m_observation.value("illumination").toInt() == 1) status = tr("半影内");
     else {
         Orbit::State state;
         state.range = m_observation.value("range").toDouble();
@@ -847,7 +848,7 @@ void SatelliteModel::updateMagnitude()
         state.elevation = m_observation.value("elevation").toDouble();
         const auto magnitude = Orbit::apparentMagnitude(state, entry->magnitude, entry->phase);
         if (magnitude) m_observation.insert("magnitude", *magnitude);
-        else status = QStringLiteral("相位接近 180°");
+        else status = tr("相位接近 180°");
     }
     m_observation.insert("magnitudeStatus", status);
 }
@@ -868,32 +869,32 @@ QVariantList SatelliteModel::orbitFields() const
     const auto *satellite = selected(); if (!satellite) return {};
     const auto &e = satellite->elements;
     const auto field = [&e](const char *key, int precision, const QString &unit = {}) {
-        return e.contains(key) ? QString::number(e.value(key).toDouble(), 'f', precision) + unit : QStringLiteral("暂无数据");
+        return e.contains(key) ? QString::number(e.value(key).toDouble(), 'f', precision) + unit : tr("暂无数据");
     };
-    const auto scientific = [&e](const char *key) { return e.contains(key) ? QString::number(e.value(key).toDouble(), 'e', 7) : QStringLiteral("暂无数据"); };
+    const auto scientific = [&e](const char *key) { return e.contains(key) ? QString::number(e.value(key).toDouble(), 'e', 7) : tr("暂无数据"); };
     QVariantList result;
-    const auto add = [&result](const QString &label, const QString &value) { result.append(QVariantMap{{"label", label}, {"value", value}}); };
-    add(QStringLiteral("卫星编号"), QString::number(satellite->number));
-    add(QStringLiteral("国际编号"), satellite->internationalId.isEmpty() ? QStringLiteral("暂无数据") : satellite->internationalId);
-    add(QStringLiteral("名称"), satellite->name);
+    const auto add = [&result](const QString &label, const QString &value, bool epoch = false) { result.append(QVariantMap{{"label", label}, {"value", value}, {"epoch", epoch}}); };
+    add(tr("卫星编号"), QString::number(satellite->number));
+    add(tr("国际编号"), satellite->internationalId.isEmpty() ? tr("暂无数据") : satellite->internationalId);
+    add(tr("名称"), satellite->name);
     const auto constellation = constellationKey(*satellite);
     if (constellation == "gps-ops" || constellation == "glo-ops" || constellation == "galileo" || constellation == "beidou") {
-        add(QStringLiteral("PRN"), m_prns.value(satellite->number, QStringLiteral("暂无数据")));
-        add(QStringLiteral("轨道面"), m_planes.value(satellite->number, QStringLiteral("暂无数据")));
+        add(QStringLiteral("PRN"), m_prns.value(satellite->number, tr("暂无数据")));
+        add(tr("轨道面"), m_planes.value(satellite->number, tr("暂无数据")));
     }
-    add(QStringLiteral("历元（协调世界时）"), e.value("EPOCH").toString());
-    add(QStringLiteral("轨道倾角"), field("INCLINATION", 4, QStringLiteral("°")));
-    add(QStringLiteral("升交点赤经"), field("RA_OF_ASC_NODE", 4, QStringLiteral("°")));
-    add(QStringLiteral("偏心率"), field("ECCENTRICITY", 7));
-    add(QStringLiteral("近地点幅角"), field("ARG_OF_PERICENTER", 4, QStringLiteral("°")));
-    add(QStringLiteral("平近点角"), field("MEAN_ANOMALY", 4, QStringLiteral("°")));
-    add(QStringLiteral("每日绕地圈数"), field("MEAN_MOTION", 8, QStringLiteral(" rev/d")));
-    add(QStringLiteral("轨道周期"), number(1440.0 / e.value("MEAN_MOTION").toDouble(), 3) + QStringLiteral(" min"));
-    add(QStringLiteral("阻力项"), scientific("BSTAR") + QStringLiteral(" R_E^-1"));
-    add(QStringLiteral("历元圈数"), field("REV_AT_EPOCH", 0));
-    add(QStringLiteral("根数集编号"), field("ELEMENT_SET_NO", 0));
-    add(QStringLiteral("平均运动一阶项"), scientific("MEAN_MOTION_DOT") + QStringLiteral(" rev/d²"));
-    add(QStringLiteral("平均运动二阶项"), scientific("MEAN_MOTION_DDOT") + QStringLiteral(" rev/d³"));
+    add(tr("历元（协调世界时）"), e.value("EPOCH").toString(), true);
+    add(tr("轨道倾角"), field("INCLINATION", 4, QStringLiteral("°")));
+    add(tr("升交点赤经"), field("RA_OF_ASC_NODE", 4, QStringLiteral("°")));
+    add(tr("偏心率"), field("ECCENTRICITY", 7));
+    add(tr("近地点幅角"), field("ARG_OF_PERICENTER", 4, QStringLiteral("°")));
+    add(tr("平近点角"), field("MEAN_ANOMALY", 4, QStringLiteral("°")));
+    add(tr("每日绕地圈数"), field("MEAN_MOTION", 8, QStringLiteral(" rev/d")));
+    add(tr("轨道周期"), number(1440.0 / e.value("MEAN_MOTION").toDouble(), 3) + QStringLiteral(" min"));
+    add(tr("阻力项"), scientific("BSTAR") + QStringLiteral(" R_E^-1"));
+    add(tr("历元圈数"), field("REV_AT_EPOCH", 0));
+    add(tr("根数集编号"), field("ELEMENT_SET_NO", 0));
+    add(tr("平均运动一阶项"), scientific("MEAN_MOTION_DOT") + QStringLiteral(" rev/d²"));
+    add(tr("平均运动二阶项"), scientific("MEAN_MOTION_DDOT") + QStringLiteral(" rev/d³"));
     return result;
 }
 void SatelliteModel::copyDetails()
@@ -903,5 +904,5 @@ void SatelliteModel::copyDetails()
         const auto field = entry.toMap(); lines.append(field.value("label").toString() + ": " + field.value("value").toString());
     }
     QGuiApplication::clipboard()->setText(lines.join('\n'));
-    setStatus(QStringLiteral("轨道参数已复制"));
+    setStatus(tr("轨道参数已复制"));
 }

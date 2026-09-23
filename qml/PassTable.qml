@@ -15,7 +15,7 @@ ColumnLayout {
         Layout.rightMargin: 12
         Layout.topMargin: 8
         Label {
-            text: "过境预报"
+            text: qsTr("过境预报")
             font.bold: true
             font.pixelSize: 13
         }
@@ -29,7 +29,7 @@ ColumnLayout {
             Layout.fillWidth: true
         }
         Label {
-            text: "最低高度角 " + table.clock.minimumElevation.toFixed(0) + "°"
+            text: qsTr("最低高度角 ") + table.clock.minimumElevation.toFixed(0) + "°"
             font.pixelSize: 11
             color: Theme.muted
         }
@@ -48,7 +48,7 @@ ColumnLayout {
             id: nextSummary
             spacing: 10
             Label {
-                text: table.clock.unixTime >= (table.nextPass.start || Infinity) ? "正在过境" : "下一次"
+                text: table.clock.unixTime >= (table.nextPass.start || Infinity) ? qsTr("正在过境") : qsTr("下一次")
                 font.bold: true
                 color: Theme.accent
                 font.pixelSize: 13
@@ -59,7 +59,7 @@ ColumnLayout {
                 font.pixelSize: 15
             }
             Label {
-                text: "峰值 " + (table.nextPass.maximum || "") + " @ " + table.clock.formatTime(table.nextPass.peak || 0, "HH:mm")
+                text: qsTr("峰值 ") + (table.nextPass.maximum || "") + " @ " + table.clock.formatTime(table.nextPass.peak || 0, "HH:mm")
                 font.family: Theme.numberFont
                 font.pixelSize: 13
             }
@@ -70,7 +70,7 @@ ColumnLayout {
             }
             Label {
                 visible: table.nextPass.hasOptical === true
-                text: "具备光学条件"
+                text: qsTr("具备光学条件")
                 font.pixelSize: 11
                 color: Theme.accent
             }
@@ -85,7 +85,7 @@ ColumnLayout {
         Layout.leftMargin: 12
         Layout.rightMargin: 12
         Repeater {
-            model: ["开始", "最高", "结束", "持续", "光学条件"]
+            model: [qsTr("开始"), qsTr("最高"), qsTr("结束"), qsTr("持续"), qsTr("光学条件")]
             Label {
                 required property string modelData
                 width: parent.width / 5
@@ -118,7 +118,7 @@ ColumnLayout {
                     width: parent.width / 5
                     spacing: 2
                     Label {
-                        text: (row.modelData.startClipped ? "早于 " : "") + table.clock.formatTime(row.modelData.start, "MM-dd")
+                        text: (row.modelData.startClipped ? qsTr("早于 ") : "") + table.clock.formatTime(row.modelData.start, "MM-dd")
                         color: Theme.muted
                         font.family: Theme.numberFont
                         font.pixelSize: 11
@@ -160,7 +160,7 @@ ColumnLayout {
                     width: parent.width / 5
                     spacing: 2
                     Label {
-                        text: (row.modelData.endClipped ? "晚于 " : "") + table.clock.formatTime(row.modelData.end, "MM-dd")
+                        text: (row.modelData.endClipped ? qsTr("晚于 ") : "") + table.clock.formatTime(row.modelData.end, "MM-dd")
                         color: Theme.muted
                         font.family: Theme.numberFont
                         font.pixelSize: 11
@@ -195,7 +195,7 @@ ColumnLayout {
                 Label {
                     width: parent.width / 5
                     wrapMode: Text.Wrap
-                    text: row.modelData.hasOptical ? "光照适宜" : "条件欠佳"
+                    text: row.modelData.hasOptical ? qsTr("光照适宜") : qsTr("条件欠佳")
                     color: row.modelData.hasOptical ? Theme.accent : Theme.muted
                     font.pixelSize: 12
                 }
@@ -205,13 +205,13 @@ ColumnLayout {
             }
             ToolTip.visible: hovered
             ToolTip.delay: 500
-            ToolTip.text: "光照观测时段：" + modelData.optical + "\n最高点距离 " + modelData.range
+            ToolTip.text: qsTr("光照观测时段：") + modelData.optical + qsTr("\n最高点距离 ") + modelData.range
             onClicked: table.clock.seek(modelData.peak)
         }
         Label {
             anchors.centerIn: parent
             visible: passes.count === 0
-            text: table.satellites.calculating ? "正在计算过境" : "本时段内暂无满足高度角条件的过境"
+            text: table.satellites.calculating ? qsTr("正在计算过境") : qsTr("本时段内暂无满足高度角条件的过境")
             color: Theme.muted
             font.pixelSize: 12
         }

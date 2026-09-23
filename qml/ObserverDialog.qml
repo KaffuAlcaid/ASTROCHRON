@@ -7,8 +7,9 @@ Dialog {
     id: dialog
     required property AppState clock
     property var cities: []
+    property bool initialSetup: false
     signal locationApplied
-    title: "观测地点"
+    title: qsTr("观测地点")
     modal: true
     closePolicy: clock.hasObserver ? Popup.CloseOnEscape | Popup.CloseOnPressOutside : Popup.NoAutoClose
     anchors.centerIn: Overlay.overlay
@@ -37,7 +38,10 @@ Dialog {
         tabs.currentIndex = 0;
         return false;
     }
-    onOpened: populate()
+    onOpened: {
+        initialSetup = !clock.hasObserver;
+        populate();
+    }
     Connections {
         target: dialog.clock
         function onElevationChanged() {
@@ -47,17 +51,22 @@ Dialog {
     }
     contentItem: ColumnLayout {
         spacing: 10
+        LanguageSettings {
+            clock: dialog.clock
+            visible: dialog.initialSetup
+            Layout.fillWidth: true
+        }
         TabBar {
             id: tabs
             Layout.fillWidth: true
             DetailTab {
-                text: "地点设置"
+                text: qsTr("地点设置")
             }
             DetailTab {
-                text: "城市"
+                text: qsTr("城市")
             }
             DetailTab {
-                text: "常用地点"
+                text: qsTr("常用地点")
             }
         }
         ScrollView {
@@ -71,7 +80,7 @@ Dialog {
                 width: fields.availableWidth
                 spacing: 9
                 Label {
-                    text: "名称"
+                    text: qsTr("名称")
                 }
                 TextField {
                     id: nameField
@@ -82,7 +91,7 @@ Dialog {
                     ColumnLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "纬度（北纬为正）"
+                            text: qsTr("纬度（北纬为正）")
                         }
                         TextField {
                             id: latitudeField
@@ -100,7 +109,7 @@ Dialog {
                     ColumnLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "经度（东经为正）"
+                            text: qsTr("经度（东经为正）")
                         }
                         TextField {
                             id: longitudeField
@@ -117,7 +126,7 @@ Dialog {
                     }
                 }
                 Label {
-                    text: "海拔（m，EGM2008）"
+                    text: qsTr("海拔（m，EGM2008）")
                 }
                 RowLayout {
                     TextField {
@@ -133,7 +142,7 @@ Dialog {
                         }
                     }
                     Button {
-                        text: "查询海拔"
+                        text: qsTr("查询海拔")
                         enabled: !dialog.clock.elevationBusy
                         onClicked: {
                             if (latitudeField.acceptableInput && longitudeField.acceptableInput && dialog.clock.setObserver(nameField.text, Number(latitudeField.text), Number(longitudeField.text), NaN, timeZoneField.editText)) {
@@ -152,19 +161,19 @@ Dialog {
                     font.pixelSize: 11
                 }
                 Label {
-                    text: dialog.clock.hasObserverHeight ? "椭球高 " + dialog.clock.ellipsoidHeight.toFixed(1) + " m" : "海拔待填写，观测计算暂按海拔 0 m 估算"
+                    text: dialog.clock.hasObserverHeight ? qsTr("椭球高 ") + dialog.clock.ellipsoidHeight.toFixed(1) + " m" : qsTr("海拔待填写，观测计算暂按海拔 0 m 估算")
                     color: Theme.muted
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     font.pixelSize: 11
                 }
                 CheckBox {
-                    text: "选点后自动查询地形海拔"
+                    text: qsTr("选点后自动查询地形海拔")
                     checked: dialog.clock.automaticElevation
                     onToggled: dialog.clock.automaticElevation = checked
                 }
                 Label {
-                    text: "查询时向 Open-Meteo 发送地点坐标。地形海拔采用约 90 m 分辨率的 Copernicus DEM，楼顶等位置可手动填写。"
+                    text: qsTr("查询时向 Open-Meteo 发送地点坐标。地形海拔采用约 90 m 分辨率的 Copernicus DEM，楼顶等位置可手动填写。")
                     font.pixelSize: 11
                     color: Theme.muted
                     Layout.fillWidth: true
@@ -177,7 +186,7 @@ Dialog {
                 }
                 RowLayout {
                     Label {
-                        text: "最低高度角"
+                        text: qsTr("最低高度角")
                         Layout.fillWidth: true
                     }
                     SpinBox {
@@ -191,7 +200,7 @@ Dialog {
                     }
                 }
                 Label {
-                    text: "时区"
+                    text: qsTr("时区")
                 }
                 ComboBox {
                     id: timeZoneField
@@ -201,7 +210,7 @@ Dialog {
                 }
                 Label {
                     id: inputError
-                    text: "请输入有效的地点名称、坐标和时区。"
+                    text: qsTr("请输入有效的地点名称、坐标和时区。")
                     color: "#b85142"
                     visible: false
                     Layout.fillWidth: true
@@ -215,7 +224,7 @@ Dialog {
             Layout.fillHeight: true
             TextField {
                 Layout.fillWidth: true
-                placeholderText: "搜索城市"
+                placeholderText: qsTr("搜索城市")
                 selectByMouse: true
                 onTextChanged: dialog.cities = dialog.clock.findCities(text)
             }
@@ -259,7 +268,7 @@ Dialog {
                     }
                     IconButton {
                         icon.source: "qrc:/icons/minus.svg"
-                        tip: "移除常用地点"
+                        tip: qsTr("移除常用地点")
                         onClicked: dialog.clock.removeObserver(index)
                     }
                 }
@@ -273,26 +282,26 @@ Dialog {
             Label {
                 anchors.centerIn: parent
                 visible: dialog.clock.savedObservers.length === 0
-                text: "暂无常用地点"
+                text: qsTr("暂无常用地点")
                 color: Theme.muted
             }
         }
     }
     footer: DialogButtonBox {
         Button {
-            text: "保存为常用地点"
+            text: qsTr("保存为常用地点")
             enabled: dialog.clock.hasObserver || tabs.currentIndex === 0
             DialogButtonBox.buttonRole: DialogButtonBox.ActionRole
             onClicked: if (dialog.apply())
                 dialog.clock.saveObserver()
         }
         Button {
-            text: "关闭"
+            text: qsTr("关闭")
             visible: dialog.clock.hasObserver
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
         }
         Button {
-            text: "确定"
+            text: qsTr("确定")
             enabled: dialog.clock.hasObserver || tabs.currentIndex === 0
             DialogButtonBox.buttonRole: DialogButtonBox.ActionRole
             onClicked: if (dialog.apply())

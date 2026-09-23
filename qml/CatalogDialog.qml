@@ -9,7 +9,7 @@ Dialog {
     required property CatalogModel catalog
     signal importRequested
     signal inspectionRequested
-    title: "卫星目录"
+    title: qsTr("卫星目录")
     modal: true
     anchors.centerIn: Overlay.overlay
     width: Math.min(920, Overlay.overlay ? Overlay.overlay.width - 32 : 920)
@@ -34,19 +34,19 @@ Dialog {
         spacing: 10
         RowLayout {
             Label {
-                text: "目录 " + dialog.satellites.catalogCount + " · 观测清单 " + dialog.satellites.total
+                text: qsTr("目录 ") + dialog.satellites.catalogCount + qsTr(" · 观测清单 ") + dialog.satellites.total
                 color: Theme.muted
                 font.pixelSize: 12
                 Layout.fillWidth: true
             }
             IconButton {
                 icon.source: "qrc:/icons/folder-open.svg"
-                tip: "导入轨道文件"
+                tip: qsTr("导入轨道文件")
                 onClicked: dialog.importRequested()
             }
             IconButton {
                 icon.source: "qrc:/icons/refresh-cw.svg"
-                tip: dialog.satellites.group === "catalog" ? "更新活动卫星来源" : "更新目录分组"
+                tip: dialog.satellites.group === "catalog" ? qsTr("更新活动卫星来源") : qsTr("更新目录分组")
                 enabled: !dialog.satellites.downloading && dialog.satellites.group !== "local"
                 onClicked: dialog.satellites.refresh()
             }
@@ -66,7 +66,7 @@ Dialog {
             }
             TextField {
                 Layout.fillWidth: true
-                placeholderText: "搜索名称、编号或国际编号"
+                placeholderText: qsTr("搜索名称、编号或国际编号")
                 text: dialog.catalog.search
                 selectByMouse: true
                 onTextEdited: dialog.catalog.search = text
@@ -81,8 +81,8 @@ Dialog {
         }
         Label {
             visible: dialog.satellites.group !== "catalog"
-            text: dialog.satellites.groupInfo.loaded ? "来源记录 " + dialog.satellites.groupInfo.count + " · 获取时间 " + dialog.satellites.groupInfo.acquired
-                : dialog.satellites.groupInfo.localMembers ? "来源分组待获取 · 列表按本地目录归类" : "分组资料待获取"
+            text: dialog.satellites.groupInfo.loaded ? qsTr("来源记录 ") + dialog.satellites.groupInfo.count + qsTr(" · 获取时间 ") + dialog.satellites.groupInfo.acquired
+                : dialog.satellites.groupInfo.localMembers ? qsTr("来源分组待获取 · 列表按本地目录归类") : qsTr("分组资料待获取")
             color: Theme.muted
             font.pixelSize: 11
             Layout.fillWidth: true
@@ -103,7 +103,7 @@ Dialog {
             Layout.leftMargin: 28
             Layout.rightMargin: 62
             Label {
-                text: "星座 / 卫星"
+                text: qsTr("星座 / 卫星")
                 color: Theme.muted
                 font.pixelSize: 11
                 Layout.fillWidth: true
@@ -123,14 +123,14 @@ Dialog {
                 horizontalAlignment: Text.AlignRight
             }
             Label {
-                text: "轨道面"
+                text: qsTr("轨道面")
                 color: Theme.muted
                 font.pixelSize: 11
                 Layout.preferredWidth: 48
                 horizontalAlignment: Text.AlignRight
             }
             Label {
-                text: "升交点赤经"
+                text: qsTr("升交点赤经")
                 color: Theme.muted
                 font.pixelSize: 11
                 Layout.preferredWidth: 96
@@ -167,7 +167,7 @@ Dialog {
                     IconButton {
                         visible: entry.isGroup
                         icon.source: entry.expanded ? "qrc:/icons/chevron-down.svg" : "qrc:/icons/chevron-right.svg"
-                        tip: entry.expanded ? "收起成员" : "展开成员"
+                        tip: entry.expanded ? qsTr("收起成员") : qsTr("展开成员")
                         onClicked: dialog.catalog.toggleGroup(entry.entryKey)
                     }
                     Label {
@@ -179,7 +179,7 @@ Dialog {
                     }
                     Label {
                         visible: entry.isGroup
-                        text: (dialog.catalog.search.trim().length ? "匹配 " : dialog.satellites.group === "catalog" || dialog.satellites.groupInfo.localMembers ? "目录 " : "组内 ") + entry.memberCount
+                        text: (dialog.catalog.search.trim().length ? qsTr("匹配 ") : dialog.satellites.group === "catalog" || dialog.satellites.groupInfo.localMembers ? qsTr("目录 ") : qsTr("组内 ")) + entry.memberCount
                         color: Theme.muted
                         font.family: Theme.numberFont
                         font.pixelSize: 13
@@ -221,7 +221,7 @@ Dialog {
                     IconButton {
                         visible: entry.isGroup
                         icon.source: "qrc:/icons/crosshair.svg"
-                        tip: "预览星座观测子集"
+                        tip: qsTr("预览星座观测子集")
                         onClicked: {
                             dialog.satellites.previewConstellation(entry.entryKey);
                             dialog.close();
@@ -232,7 +232,7 @@ Dialog {
                         checked: entry.watched
                         implicitWidth: 34
                         implicitHeight: 28
-                        Accessible.name: entry.watched ? "移出观测清单" : "加入观测清单"
+                        Accessible.name: entry.watched ? qsTr("移出观测清单") : qsTr("加入观测清单")
                         ToolTip.visible: hovered
                         ToolTip.text: Accessible.name
                         onToggled: dialog.satellites.setWatched(entry.entryKey, checked)
@@ -240,7 +240,7 @@ Dialog {
                 }
                 ToolTip.visible: hovered && !isGroup
                 ToolTip.delay: 600
-                ToolTip.text: entryName + "\nNORAD " + catalogNumber + " · PRN " + prn + "\n轨道面 " + plane + " · 升交点赤经 " + nodeLongitude
+                ToolTip.text: entryName + "\nNORAD " + catalogNumber + " · PRN " + prn + qsTr("\n轨道面 ") + plane + qsTr(" · 升交点赤经 ") + nodeLongitude
                 onClicked: {
                     if (isGroup)
                         dialog.catalog.toggleGroup(entryKey);
@@ -254,10 +254,10 @@ Dialog {
             Label {
                 anchors.centerIn: parent
                 visible: entries.count === 0
-                text: dialog.catalog.search.trim().length ? "暂无匹配目标"
-                    : dialog.satellites.downloading ? "正在获取目录分组"
-                    : dialog.satellites.groupInfo.localMembers ? "本地目录中暂无该星座的对象"
-                    : dialog.satellites.group !== "catalog" && !dialog.satellites.groupInfo.loaded ? "分组资料待获取" : "本组暂无目标"
+                text: dialog.catalog.search.trim().length ? qsTr("暂无匹配目标")
+                    : dialog.satellites.downloading ? qsTr("正在获取目录分组")
+                    : dialog.satellites.groupInfo.localMembers ? qsTr("本地目录中暂无该星座的对象")
+                    : dialog.satellites.group !== "catalog" && !dialog.satellites.groupInfo.loaded ? qsTr("分组资料待获取") : qsTr("本组暂无目标")
                 color: Theme.muted
             }
         }

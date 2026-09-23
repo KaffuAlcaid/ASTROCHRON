@@ -65,7 +65,7 @@ Flow {
     Row {
         spacing: 3
         Label {
-            text: "轨迹"
+            text: qsTr("轨迹")
             color: Theme.muted
             font.pixelSize: 11
             height: 26
@@ -74,20 +74,20 @@ Flow {
         }
         LayerToggle {
             id: pastToggle
-            text: "过去"
+            text: qsTr("过去")
             checked: true
             swatch: Theme.past
             dashed: true
         }
         LayerToggle {
             id: futureToggle
-            text: "未来"
+            text: qsTr("未来")
             checked: true
             swatch: Theme.accent
         }
         LayerToggle {
             id: satelliteToggle
-            text: "目标"
+            text: qsTr("目标")
             checked: true
         }
         LayerToggle {
@@ -97,15 +97,15 @@ Flow {
         }
         LayerToggle {
             id: coverageToggle
-            text: "覆盖范围"
+            text: qsTr("覆盖范围")
             ToolTip.visible: hovered
-            ToolTip.text: "按最低高度角计算，采用球面近似"
+            ToolTip.text: qsTr("按最低高度角计算，采用球面近似")
         }
     }
     Row {
         spacing: 3
         Label {
-            text: "地图"
+            text: qsTr("地图")
             color: Theme.muted
             font.pixelSize: 11
             height: 26
@@ -114,32 +114,32 @@ Flow {
         }
         LayerToggle {
             id: dayToggle
-            text: "昼夜线"
+            text: qsTr("昼夜线")
             checked: true
         }
         LayerToggle {
             id: cityToggle
-            text: "城市"
+            text: qsTr("城市")
             checked: true
         }
         LayerToggle {
             id: stationToggle
-            text: "地点"
+            text: qsTr("地点")
             checked: true
         }
         LayerToggle {
             id: borderToggle
-            text: "国界"
+            text: qsTr("国界")
             checked: true
         }
         LayerToggle {
             id: lakeToggle
-            text: "湖泊"
+            text: qsTr("湖泊")
             checked: true
         }
         LayerToggle {
             id: gridToggle
-            text: "经纬网"
+            text: qsTr("经纬网")
         }
     }
 }

@@ -40,6 +40,9 @@ class AppState : public QObject {
     Q_PROPERTY(bool automaticElevation READ automaticElevation WRITE setAutomaticElevation NOTIFY elevationChanged)
     Q_PROPERTY(double minimumElevation READ minimumElevation WRITE setMinimumElevation NOTIFY observerChanged)
     Q_PROPERTY(QVariantList savedObservers READ savedObservers NOTIFY observerChanged)
+    Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
+    Q_PROPERTY(QString startupLanguage READ startupLanguage CONSTANT)
+    Q_PROPERTY(bool chinese READ chinese CONSTANT)
 
 public:
     explicit AppState(QObject *parent = nullptr);
@@ -50,7 +53,7 @@ public:
     int minuteOffset() const { return m_offset; }
     bool live() const { return m_live; }
     QVector3D sunDirection() const { return m_sun; }
-    QString observerName() const { return m_observerName; }
+    QString observerName() const;
     bool hasObserver() const { return m_hasObserver; }
     double observerLatitude() const { return m_latitude; }
     double observerLongitude() const { return m_longitude; }
@@ -67,7 +70,7 @@ public:
     double nowTime() const { return m_now.toMSecsSinceEpoch() / 1000.0; }
     Q_INVOKABLE QString formatTime(double unixSeconds, const QString &format = QStringLiteral("HH:mm:ss")) const;
     double ellipsoidHeight() const;
-    QString elevationStatus() const { return m_elevationStatus; }
+    QString elevationStatus() const;
     bool elevationBusy() const { return m_elevationBusy; }
     bool automaticElevation() const { return m_automaticElevation; }
     double minimumElevation() const { return m_minimumElevation; }
@@ -84,6 +87,11 @@ public:
     Q_INVOKABLE void resumeLive();
     Q_INVOKABLE bool setObserver(const QString &name, double latitude, double longitude, double height, const QString &timeZone);
     Q_INVOKABLE QVariantList findCities(const QString &query) const;
+    QString language() const { return m_language; }
+    QString startupLanguage() const { return m_startupLanguage; }
+    bool chinese() const;
+    void setLanguage(const QString &language);
+    Q_INVOKABLE bool restart();
 
 signals:
     void timeChanged();
@@ -92,10 +100,12 @@ signals:
     void elevationChanged();
     void updateFrequencyChanged();
     void nowChanged();
+    void languageChanged();
 
 private:
     void updateSun();
     QDateTime selectedTime() const;
+    QString placeName(const QString &name, double latitude, double longitude) const;
     QSettings m_settings;
     QDateTime m_reference;
     QDateTime m_now;
@@ -119,4 +129,6 @@ private:
     bool m_automaticElevation = true;
     double m_minimumElevation = 10;
     quint64 m_elevationRequest = 0;
+    QString m_language;
+    QString m_startupLanguage;
 };

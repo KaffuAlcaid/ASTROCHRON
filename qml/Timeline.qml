@@ -73,7 +73,7 @@ Rectangle {
                     }
                 }
                 Label {
-                    text: timeline.clock.live ? "现在 · " + timeline.clock.formatTime(timeline.clock.unixTime, "HH:mm:ss") : timeline.clock.formatTime(timeline.clock.unixTime, "MM-dd HH:mm:ss")
+                    text: timeline.clock.live ? qsTr("现在 · ") + timeline.clock.formatTime(timeline.clock.unixTime, "HH:mm:ss") : timeline.clock.formatTime(timeline.clock.unixTime, "MM-dd HH:mm:ss")
                     x: Math.max(0, Math.min(slider.width - width, slider.handle.x + 6 - width / 2))
                     y: 0
                     font.family: Theme.numberFont
@@ -106,7 +106,7 @@ Rectangle {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             ToolTip.visible: containsMouse
-                            ToolTip.text: "过境 " + timeline.clock.formatTime(parent.modelData.start, "HH:mm:ss") + " - " + timeline.clock.formatTime(parent.modelData.end, "HH:mm:ss") + "\n峰值 " + parent.modelData.maximum
+                            ToolTip.text: qsTr("过境 ") + timeline.clock.formatTime(parent.modelData.start, "HH:mm:ss") + " - " + timeline.clock.formatTime(parent.modelData.end, "HH:mm:ss") + qsTr("\n峰值 ") + parent.modelData.maximum
                             onClicked: timeline.clock.seek(parent.modelData.peak)
                         }
                     }
@@ -153,14 +153,14 @@ Rectangle {
                 Label {
                     visible: !timeline.clock.live && timeline.fraction(timeline.clock.nowTime) >= 0 && timeline.fraction(timeline.clock.nowTime) <= 1
                     x: Math.max(70, Math.min(parent.width - width - 70, timeline.fraction(timeline.clock.nowTime) * parent.width - width / 2))
-                    text: "现在"
+                    text: qsTr("现在")
                     color: Theme.muted
                     font.pixelSize: 11
                 }
             }
         }
         Button {
-            text: "回到现在"
+            text: qsTr("回到现在")
             icon.source: "qrc:/icons/rotate-ccw.svg"
             icon.color: Theme.text
             enabled: !timeline.clock.live

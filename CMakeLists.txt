@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Quick QuickControls2 ShaderTools Network Sql)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Quick QuickControls2 ShaderTools Network Sql LinguistTools)
 find_program(NODE_EXECUTABLE node REQUIRED)
 qt_standard_project_setup(REQUIRES 6.11)
 
@@ -55,7 +55,7 @@ qt_add_qml_module(astrochron
         qml/IconButton.qml qml/DetailTab.qml qml/FieldRow.qml
         qml/SatelliteSidebar.qml qml/MapToolbar.qml qml/LayerMenu.qml
         qml/MapWorkspace.qml qml/PassTable.qml qml/ObservationPane.qml qml/Timeline.qml
-        qml/ObserverDialog.qml qml/SettingsDialog.qml
+        qml/ObserverDialog.qml qml/SettingsDialog.qml qml/LanguageSettings.qml
         qml/CatalogDialog.qml qml/PhotometryDialog.qml
     SOURCES
         src/app_state.h src/app_state.cpp
@@ -68,6 +68,11 @@ qt_add_qml_module(astrochron
         src/orbit_layer.h src/orbit_layer.cpp
 )
 target_include_directories(astrochron PRIVATE src)
+qt_add_translations(astrochron
+    TS_FILES translations/astrochron_en.ts
+    RESOURCE_PREFIX /i18n
+    LUPDATE_OPTIONS -no-obsolete -locations none
+)
 target_link_libraries(astrochron PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Sql astronomy_engine sgp4)
 if(MSVC)
     target_compile_options(astrochron PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/utf-8> $<$<COMPILE_LANGUAGE:CXX>:/W4>)
