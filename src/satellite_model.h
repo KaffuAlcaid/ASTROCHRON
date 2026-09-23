@@ -173,6 +173,8 @@ private:
     double m_trackReference = 0;
     Orbit::Track m_trackCache;
     double m_lastTime = 0;
+    double m_calculationTime = 0;
+    quint64 m_calculationRevision = 0;
     double m_frequency = 145.8;
     bool m_downloading = false, m_busy = false, m_needTrack = true, m_pending = false;
     QVariantMap m_observation;

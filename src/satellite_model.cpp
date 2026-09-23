@@ -171,6 +171,9 @@ void SatelliteModel::setClock(AppState *clock)
     if (m_clock) disconnect(m_clock, nullptr, this, nullptr);
     m_clock = clock;
     if (clock) {
+        const auto reschedule = [this] { m_calculationTime = 0; m_gnssTime = 0; requestFrame(); };
+        connect(clock, &AppState::calculationFrequencyChanged, this, reschedule);
+        connect(clock, &AppState::updateFrequencyChanged, this, reschedule);
         connect(clock, &AppState::localizedChanged, this, [this] {
             emit localizedChanged(); emit detailsChanged(); emit frameChanged(); emit trajectoryChanged();
             emit previewChanged(); emit sourceChanged(); emit statusChanged(); emit photometryChanged();
@@ -601,6 +604,9 @@ void SatelliteModel::setReceiveFrequency(double value)
 void SatelliteModel::requestFrame()
 {
     if (!m_clock || !m_clock->hasObserver() || m_satellites.isEmpty()) return;
+    const double time = m_clock->unixTime();
+    const double calculationInterval = 1.0 / m_clock->calculationFrequency();
+    if (m_clock->live() && m_revision == m_calculationRevision && !m_needTrack && std::abs(time - m_calculationTime) < calculationInterval) return;
     if (m_busy) { m_pending = true; return; }
     QVector<Orbit::Satellite> satellites;
     QSet<qint64> watchIds;
@@ -614,7 +620,9 @@ void SatelliteModel::requestFrame()
     }
     const auto id = m_selected;
     const auto revision = m_revision;
-    const double time = m_clock->unixTime(), reference = m_clock->referenceTime();
+    const double reference = m_clock->referenceTime();
+    const bool interpolate = m_clock->live() && m_clock->updateFrequency() > m_clock->calculationFrequency();
+    const bool interpolateGnss = m_clock->live() && m_clock->updateFrequency() > 1;
     const bool calculateGnss = std::abs(time - m_gnssTime) >= 1;
     QVector<Orbit::Satellite> gnss;
     if (calculateGnss) for (const int index : m_gnssTargets) gnss.append(m_satellites[index]);
@@ -627,18 +635,30 @@ void SatelliteModel::requestFrame()
     const int previewMode = m_previewMode;
     if (!std::isfinite(observer.heightKm)) { setStatus([] { return tr("大地水准面数据读取失败"); }); return; }
     m_busy = true; m_pending = false; m_needTrack = false;
+    m_calculationTime = time; m_calculationRevision = revision;
     emit statusChanged();
-    m_pool.start([this, satellites, gnss, calculateGnss, id, revision, time, reference, observer, zone, calculateTrack, previousTrack, hasHeight, watchIds, previewCandidates, previewMode] {
+    m_pool.start([this, satellites, gnss, calculateGnss, id, revision, time, reference, observer, zone, calculateTrack, previousTrack, hasHeight, watchIds, previewCandidates, previewMode, calculationInterval, interpolate, interpolateGnss] {
         QVariantList markers, trajectory, passes, shadowEvents;
         QVariantList gnssMarkers;
         QVariantMap observation;
         QHash<qint64, double> elevations;
         const auto geometry = Orbit::observerGeometry(observer);
         const auto context = Orbit::propagationContext(time, geometry);
+        const auto nextContext = interpolate ? Orbit::propagationContext(time + calculationInterval, geometry) : context;
+        const auto nextGnssContext = calculateGnss && interpolateGnss ? Orbit::propagationContext(time + 1, geometry) : context;
+        const auto addNextPosition = [](QVariantMap &marker, const Orbit::Satellite &satellite, const Orbit::PropagationContext &next) {
+            if (const auto point = Orbit::position(satellite, next)) {
+                marker.insert("nextTime", point->time); marker.insert("nextLatitude", point->latitude);
+                marker.insert("nextLongitude", point->longitude); marker.insert("nextAltitude", point->altitude);
+            }
+        };
         Orbit::Track trackCache;
         for (const auto &satellite : gnss) {
-            if (const auto state = Orbit::position(satellite, context))
-                gnssMarkers.append(QVariantMap{{"id", QString::number(satellite.number)}, {"latitude", state->latitude}, {"longitude", state->longitude}});
+            if (const auto state = Orbit::position(satellite, context)) {
+                QVariantMap marker{{"id", QString::number(satellite.number)}, {"time", time}, {"latitude", state->latitude}, {"longitude", state->longitude}};
+                if (interpolateGnss) addNextPosition(marker, satellite, nextGnssContext);
+                gnssMarkers.append(marker);
+            }
         }
         int previewCount = 0;
         for (const auto &satellite : satellites) {
@@ -649,7 +669,11 @@ void SatelliteModel::requestFrame()
             marker.insert("id", QString::number(satellite.number));
             const bool inPreview = previewCandidates.contains(satellite.number) && (previewMode != 0 || state->elevation >= observer.minimumElevation);
             if (inPreview) ++previewCount;
-            if (watchIds.contains(satellite.number) || satellite.number == id || inPreview) markers.append(marker);
+            if (watchIds.contains(satellite.number) || satellite.number == id || inPreview) {
+                auto displayed = marker;
+                if (interpolate) addNextPosition(displayed, satellite, nextContext);
+                markers.append(displayed);
+            }
             if (satellite.number != id) continue;
             observation = marker;
             observation.insert("originalName", satellite.name);

@@ -31,6 +31,7 @@ class AppState : public QObject {
     Q_PROPERTY(QStringList timeZones READ timeZones CONSTANT)
     Q_PROPERTY(bool darkTheme READ darkTheme WRITE setDarkTheme NOTIFY themeChanged)
     Q_PROPERTY(int updateFrequency READ updateFrequency WRITE setUpdateFrequency NOTIFY updateFrequencyChanged)
+    Q_PROPERTY(int calculationFrequency READ calculationFrequency WRITE setCalculationFrequency NOTIFY calculationFrequencyChanged)
     Q_PROPERTY(double unixTime READ unixTime NOTIFY timeChanged)
     Q_PROPERTY(double referenceTime READ referenceTime NOTIFY timeChanged)
     Q_PROPERTY(double nowTime READ nowTime NOTIFY nowChanged)
@@ -64,6 +65,8 @@ public:
     bool darkTheme() const { return m_dark; }
     int updateFrequency() const { return m_updateFrequency; }
     void setUpdateFrequency(int frequency);
+    int calculationFrequency() const { return m_calculationFrequency; }
+    void setCalculationFrequency(int frequency);
     double unixTime() const { return selectedTime().toMSecsSinceEpoch() / 1000.0; }
     double referenceTime() const { return m_reference.toMSecsSinceEpoch() / 1000.0; }
     double nowTime() const { return m_now.toMSecsSinceEpoch() / 1000.0; }
@@ -97,6 +100,7 @@ signals:
     void themeChanged();
     void elevationChanged();
     void updateFrequencyChanged();
+    void calculationFrequencyChanged();
     void nowChanged();
     void languageChanged();
     void localizedChanged();
@@ -122,6 +126,8 @@ private:
     bool m_live = true;
     bool m_dark;
     int m_updateFrequency = 1;
+    int m_calculationFrequency = 1;
+    double m_sunTime = 0;
     QNetworkAccessManager m_network;
     QString m_elevationStatus;
     bool m_elevationBusy = false;

@@ -2,13 +2,14 @@
 
 #include "world_map.h"
 #include <QQuickItem>
+#include <QHash>
 
 class OrbitLayer : public QQuickItem {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(WorldMap *map READ map WRITE setMap NOTIFY mapChanged)
-    Q_PROPERTY(QVariantList markers MEMBER m_markers NOTIFY contentChanged)
-    Q_PROPERTY(QVariantList trajectory MEMBER m_trajectory NOTIFY contentChanged)
+    Q_PROPERTY(QVariantList markers READ markers WRITE setMarkers NOTIFY contentChanged)
+    Q_PROPERTY(QVariantList trajectory READ trajectory WRITE setTrajectory NOTIFY contentChanged)
     Q_PROPERTY(QString selectedId MEMBER m_selected NOTIFY contentChanged)
     Q_PROPERTY(double time MEMBER m_time NOTIFY contentChanged)
     Q_PROPERTY(double minimumElevation MEMBER m_minimumElevation NOTIFY contentChanged)
@@ -27,6 +28,10 @@ public:
     explicit OrbitLayer(QQuickItem *parent = nullptr);
     WorldMap *map() const { return m_map; }
     void setMap(WorldMap *map);
+    QVariantList markers() const { return m_markers; }
+    QVariantList trajectory() const { return m_trajectory; }
+    void setMarkers(const QVariantList &markers);
+    void setTrajectory(const QVariantList &trajectory);
     QPointF selectedPosition() const;
     Q_INVOKABLE QString satelliteAt(double x, double y) const;
 signals:
@@ -35,9 +40,19 @@ signals:
 protected:
     QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
 private:
+    struct Marker {
+        QString id;
+        double longitude, latitude, altitude, time;
+        double nextLongitude, nextLatitude, nextAltitude, nextTime;
+    };
     QPointF project(double longitude, double latitude) const;
+    QPointF markerCoordinate(const Marker &marker) const;
+    double markerFraction(const Marker &marker) const;
     WorldMap *m_map = nullptr;
     QVariantList m_markers, m_trajectory;
+    QVector<Marker> m_points;
+    QHash<QString, qsizetype> m_pointIndices;
+    quint64 m_trajectoryRevision = 0;
     QString m_selected;
     double m_time = 0, m_minimumElevation = 10;
     double m_highlightStart = 0, m_highlightEnd = 0;

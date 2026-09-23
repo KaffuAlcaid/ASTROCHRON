@@ -1761,8 +1761,12 @@ Acquired </translation>
             <translation>Settings</translation>
         </message>
         <message>
-            <source>实时更新频率</source>
-            <translation>Live update rate</translation>
+            <source>绘图刷新频率</source>
+            <translation>Map refresh rate</translation>
+        </message>
+        <message>
+            <source>轨道计算频率</source>
+            <translation>Orbit calculation rate</translation>
         </message>
         <message>
             <source>获取观测天气预报</source>

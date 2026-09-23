@@ -34,6 +34,7 @@ AppState::AppState(QObject *parent) : QObject(parent), m_reference(QDateTime::cu
     m_timeZone = QTimeZone(m_settings.value("observer/timeZone", QStringLiteral("Asia/Taipei")).toByteArray());
     m_dark = m_settings.value("appearance/dark", QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark).toBool();
     m_updateFrequency = qBound(1, m_settings.value("display/updateFrequency", 1).toInt(), 60);
+    m_calculationFrequency = qBound(1, m_settings.value("calculation/frequency", 1).toInt(), m_updateFrequency);
     updateSun();
     connect(&m_timer, &QTimer::timeout, this, [this] {
         const auto now = QDateTime::currentDateTimeUtc();
@@ -267,6 +268,9 @@ void AppState::resumeLive()
 
 void AppState::updateSun()
 {
+    const double seconds = unixTime();
+    if (m_live && std::floor(seconds) == std::floor(m_sunTime)) return;
+    m_sunTime = seconds;
     const auto selected = selectedTime();
     const auto date = selected.date();
     const auto clock = selected.time();
@@ -297,6 +301,16 @@ void AppState::setUpdateFrequency(int frequency)
     m_timer.setInterval(qRound(1000.0 / frequency));
     m_settings.setValue("display/updateFrequency", frequency);
     emit updateFrequencyChanged();
+    if (m_calculationFrequency > frequency) setCalculationFrequency(frequency);
+}
+
+void AppState::setCalculationFrequency(int frequency)
+{
+    frequency = qBound(1, frequency, m_updateFrequency);
+    if (m_calculationFrequency == frequency) return;
+    m_calculationFrequency = frequency;
+    m_settings.setValue("calculation/frequency", frequency);
+    emit calculationFrequencyChanged();
 }
 
 bool AppState::setObserver(const QString &name, double latitude, double longitude, double height, const QString &timeZone)

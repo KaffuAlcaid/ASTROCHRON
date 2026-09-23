@@ -129,6 +129,7 @@ ColumnLayout {
                 visible: layers.gnss
                 map: worldMap
                 markers: workspace.satellites.gnssMarkers
+                time: workspace.clock.unixTime
                 markerColor: Theme.marker
                 z: 1
             }

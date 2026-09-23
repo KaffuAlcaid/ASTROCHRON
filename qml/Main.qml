@@ -18,14 +18,15 @@ ApplicationWindow {
     color: Theme.background
     property bool expanded: false
     readonly property bool compact: width < 1240
+    readonly property var passList: satelliteModel.passes
     property var nextPass: {
-        const passes = satelliteModel.passes;
+        const passes = window.passList;
         for (let i = 0; i < passes.length; ++i)
             if (passes[i].end >= appState.unixTime)
                 return passes[i];
         return ({});
     }
-    property var skyPass: nextPass.start !== undefined ? nextPass : satelliteModel.passes.length ? satelliteModel.passes[satelliteModel.passes.length - 1] : ({})
+    property var skyPass: nextPass.start !== undefined ? nextPass : passList.length ? passList[passList.length - 1] : ({})
     function showDetails() {
         if (compact)
             detailDrawer.open();

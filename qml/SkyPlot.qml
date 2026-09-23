@@ -12,6 +12,21 @@ Canvas {
     property color pastColor: "#b77c44"
     property color futureColor: "#087e6f"
     property var directions: [qsTr("北"), qsTr("南"), qsTr("西"), qsTr("东")]
+    readonly property var passSamples: {
+        let nearest = -1, distance = Infinity;
+        for (let i = 0; i < trajectory.length; ++i) {
+            if (passTime > 0 && trajectory[i].elevation >= minimumElevation && Math.abs(trajectory[i].time - passTime) < distance) {
+                nearest = i;
+                distance = Math.abs(trajectory[i].time - passTime);
+            }
+        }
+        if (nearest < 0) return [];
+        let start = nearest, end = nearest;
+        while (start > 0 && trajectory[start - 1].elevation >= 0 && trajectory[start].time - trajectory[start - 1].time <= 31) --start;
+        while (end + 1 < trajectory.length && trajectory[end + 1].elevation >= 0 && trajectory[end + 1].time - trajectory[end].time <= 31) ++end;
+        return trajectory.slice(start, end + 1);
+    }
+    onPassSamplesChanged: requestPaint()
     onDirectionsChanged: requestPaint()
     onTrajectoryChanged: requestPaint()
     onObservationChanged: requestPaint()
@@ -54,21 +69,9 @@ Canvas {
         ctx.textAlign = "left";
         ctx.fillText("30°", cx + 4, cy - radius * 2 / 3 + 12);
         ctx.fillText("60°", cx + 4, cy - radius / 3 + 12);
-        let nearest = -1, distance = Infinity;
-        for (let i = 0; i < trajectory.length; ++i) {
-            if (passTime > 0 && trajectory[i].elevation >= minimumElevation && Math.abs(trajectory[i].time - passTime) < distance) {
-                nearest = i;
-                distance = Math.abs(trajectory[i].time - passTime);
-            }
-        }
-        if (nearest >= 0) {
-            let start = nearest, end = nearest;
-            while (start > 0 && trajectory[start - 1].elevation >= 0 && trajectory[start].time - trajectory[start - 1].time <= 31)
-                --start;
-            while (end + 1 < trajectory.length && trajectory[end + 1].elevation >= 0 && trajectory[end + 1].time - trajectory[end].time <= 31)
-                ++end;
-            for (let i = start + 1; i <= end; ++i) {
-                const a = trajectory[i - 1], b = trajectory[i], p = point(a.azimuth, a.elevation), q = point(b.azimuth, b.elevation);
+        if (passSamples.length > 1) {
+            for (let i = 1; i < passSamples.length; ++i) {
+                const a = passSamples[i - 1], b = passSamples[i], p = point(a.azimuth, a.elevation), q = point(b.azimuth, b.elevation);
                 ctx.strokeStyle = b.time < selectedTime ? pastColor : futureColor;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
