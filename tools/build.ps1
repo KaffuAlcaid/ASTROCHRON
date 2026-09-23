@@ -59,7 +59,8 @@ if ($Deploy) {
         throw 'The x64 VC runtime DLLs were not found. Load the MSVC x64 environment before deploying.'
     }
     $deploymentArguments = @($deploymentMode, '--verbose', '0', '--qmldir', (Join-Path $projectRoot 'qml'),
-        '--translations', 'zh_CN', '--no-system-dxc-compiler', '--skip-plugin-types', 'qmltooling,generic',
+        '--translations', 'zh_CN', '--no-system-d3d-compiler', '--no-system-dxc-compiler', '--no-opengl-sw',
+        '--skip-plugin-types', 'qmltooling,generic',
         '--exclude-plugins', 'qsqlibase,qsqlmimer,qsqloci,qsqlodbc,qsqlpsql')
     if ($Configuration -eq 'Release' -and (Test-Path -LiteralPath $runtimeDirectory)) {
         $deploymentArguments += '--no-compiler-runtime'
