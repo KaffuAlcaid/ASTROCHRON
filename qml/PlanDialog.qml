@@ -12,14 +12,10 @@ Dialog {
     property string exportFormat: "csv"
     title: qsTr("导出观测计划")
     modal: true
-    standardButtons: Dialog.Close
+    closePolicy: Popup.CloseOnEscape
     anchors.centerIn: Overlay.overlay
     width: Math.min(640, Overlay.overlay.width - 32)
     height: Math.min(540, Overlay.overlay.height - 32)
-    onOpened: {
-        const button = standardButton(Dialog.Close);
-        if (button) button.text = Qt.binding(function() { return qsTr("关闭"); });
-    }
     function openPlan() {
         satellites.preparePlan();
         open();
@@ -78,6 +74,7 @@ Dialog {
     footer: DialogButtonBox {
         Button {
             text: qsTr("导出 CSV")
+            Accessible.name: text
             icon.source: "qrc:/icons/download.svg"
             enabled: !dialog.satellites.planBusy && dialog.satellites.planPasses.length > 0
             DialogButtonBox.buttonRole: DialogButtonBox.ActionRole
@@ -85,11 +82,13 @@ Dialog {
         }
         Button {
             text: qsTr("导出 ICS")
+            Accessible.name: text
             icon.source: "qrc:/icons/download.svg"
             enabled: !dialog.satellites.planBusy && dialog.satellites.planPasses.length > 0
             DialogButtonBox.buttonRole: DialogButtonBox.ActionRole
             onClicked: dialog.save("ics")
         }
+        Button { text: qsTr("关闭"); DialogButtonBox.buttonRole: DialogButtonBox.RejectRole }
         onRejected: dialog.close()
     }
     FileDialog {

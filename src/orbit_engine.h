@@ -78,6 +78,7 @@ struct Track {
 };
 
 Sun sunAt(double unixSeconds);
+QString formatEpoch(double unixSeconds);
 ObserverGeometry observerGeometry(const Observer &observer);
 PropagationContext propagationContext(double unixSeconds, const ObserverGeometry &observer);
 std::optional<Satellite> fromOmm(const QJsonObject &object, QString &error);

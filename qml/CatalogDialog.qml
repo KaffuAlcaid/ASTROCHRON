@@ -14,10 +14,9 @@ Dialog {
     anchors.centerIn: Overlay.overlay
     width: Math.min(920, Overlay.overlay ? Overlay.overlay.width - 32 : 920)
     height: Math.min(760, Overlay.overlay ? Overlay.overlay.height - 32 : 760)
-    standardButtons: Dialog.Close
-    onOpened: {
-        const button = standardButton(Dialog.Close);
-        if (button) button.text = Qt.binding(function() { return qsTr("关闭"); });
+    footer: DialogButtonBox {
+        Button { text: qsTr("关闭"); DialogButtonBox.buttonRole: DialogButtonBox.RejectRole }
+        onRejected: dialog.close()
     }
     function groupIndex() {
         for (let i = 0; i < satellites.groups.length; ++i)

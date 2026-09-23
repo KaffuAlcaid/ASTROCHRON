@@ -9,15 +9,10 @@ Dialog {
     readonly property var candidates: satellites.cleanupCandidates
     title: qsTr("在线历史快照")
     modal: true
-    standardButtons: Dialog.Close
     anchors.centerIn: Overlay.overlay
     width: Math.min(640, Overlay.overlay.width - 32)
     height: Math.min(560, Overlay.overlay.height - 32)
-    onOpened: {
-        satellites.refreshStorage();
-        const button = standardButton(Dialog.Close);
-        if (button) button.text = Qt.binding(function() { return qsTr("关闭"); });
-    }
+    onOpened: satellites.refreshStorage()
     contentItem: ColumnLayout {
         spacing: 12
         Label {
@@ -83,6 +78,7 @@ Dialog {
             DialogButtonBox.buttonRole: DialogButtonBox.ActionRole
             onClicked: if (dialog.satellites.enableCleanup()) dialog.close()
         }
+        Button { text: qsTr("关闭"); DialogButtonBox.buttonRole: DialogButtonBox.RejectRole }
         onRejected: dialog.close()
     }
 }

@@ -11,11 +11,10 @@ Dialog {
     modal: true
     anchors.centerIn: Overlay.overlay
     width: Math.min(510, Overlay.overlay ? Overlay.overlay.width - 32 : 510)
-    standardButtons: Dialog.Close
-    onOpened: {
-        loadParameters();
-        const button = standardButton(Dialog.Close);
-        if (button) button.text = Qt.binding(function() { return qsTr("关闭"); });
+    onOpened: loadParameters()
+    footer: DialogButtonBox {
+        Button { text: qsTr("关闭"); DialogButtonBox.buttonRole: DialogButtonBox.RejectRole }
+        onRejected: dialog.close()
     }
     function loadParameters() {
         const parameters = satellites.photometry;

@@ -67,6 +67,8 @@ double epochSeconds(QString text)
     return date.toMSecsSinceEpoch() / 1000.0 + subsecond;
 }
 
+}
+
 QString formatEpoch(double seconds)
 {
     const qint64 micros = static_cast<qint64>(std::llround(seconds * 1000000.0));
@@ -76,6 +78,7 @@ QString formatEpoch(double seconds)
         + QStringLiteral(".%1").arg(fraction, 6, 10, QLatin1Char('0'));
 }
 
+namespace {
 std::optional<Satellite> fromTle(const QString &name, const QString &first, const QString &second, QString &error)
 {
     if (first.size() < 69 || second.size() < 69 || first.mid(2, 5) != second.mid(2, 5)) {

@@ -14,13 +14,12 @@ Dialog {
     anchors.centerIn: Overlay.overlay
     width: 430
     height: Math.min(implicitHeight, Overlay.overlay ? Overlay.overlay.height - 32 : implicitHeight)
-    standardButtons: Dialog.Close
     UpdateChecker { id: updates }
     SnapshotDialog { id: snapshotsDialog; satellites: dialog.satellites }
-    onOpened: {
-        satellites.refreshStorage();
-        const button = standardButton(Dialog.Close);
-        if (button) button.text = Qt.binding(function() { return qsTr("关闭"); });
+    onOpened: satellites.refreshStorage()
+    footer: DialogButtonBox {
+        Button { text: qsTr("关闭"); DialogButtonBox.buttonRole: DialogButtonBox.RejectRole }
+        onRejected: dialog.close()
     }
     Connections {
         target: dialog.clock

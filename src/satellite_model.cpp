@@ -734,10 +734,10 @@ bool SatelliteModel::exportPlan(const QUrl &url, const QString &format)
 {
     if (m_planBusy || m_plan.passes.isEmpty() || !url.isLocalFile() || (format != "csv" && format != "ics")) return false;
     const auto iso = [](double time, const QTimeZone &zone) {
-        return QDateTime::fromSecsSinceEpoch(qRound64(time), zone).toString(Qt::ISODate);
+        return QDateTime::fromSecsSinceEpoch(static_cast<qint64>(std::floor(time)), zone).toString(Qt::ISODate);
     };
     const auto utc = [](double time) {
-        return QDateTime::fromSecsSinceEpoch(qRound64(time), QTimeZone::UTC).toString("yyyyMMdd'T'HHmmss'Z'");
+        return QDateTime::fromSecsSinceEpoch(static_cast<qint64>(std::floor(time)), QTimeZone::UTC).toString("yyyyMMdd'T'HHmmss'Z'");
     };
     QByteArray output;
     const auto csvRow = [&](const QStringList &values) {
@@ -764,7 +764,7 @@ bool SatelliteModel::exportPlan(const QUrl &url, const QString &format)
         }
     };
     const auto name = Orbit::displayName(m_plan.satellite);
-    const auto epoch = iso(m_plan.satellite.epoch, QTimeZone::UTC);
+    const auto epoch = Orbit::formatEpoch(m_plan.satellite.epoch) + 'Z';
     const auto zone = QString::fromUtf8(m_plan.zone.id());
     const auto location = tr("%1（%2°, %3°）").arg(m_plan.observerName, number(m_plan.observer.latitude, 6), number(m_plan.observer.longitude, 6));
     if (format == "csv") {
@@ -812,7 +812,7 @@ bool SatelliteModel::exportPlan(const QUrl &url, const QString &format)
             icsLine("UID:" + QUuid::createUuidV5(QUuid("{cb64f4af-cd0e-4d96-806d-1d73cf11da90}"), identity.toUtf8()).toString(QUuid::WithoutBraces) + "@astrochron");
             icsLine("DTSTAMP:" + utc(QDateTime::currentSecsSinceEpoch()));
             icsLine("DTSTART:" + utc(pass.rise.time));
-            icsLine("DTEND:" + utc(std::max(qRound64(pass.set.time), qRound64(pass.rise.time) + 1)));
+            icsLine("DTEND:" + utc(std::max(std::floor(pass.set.time), std::floor(pass.rise.time) + 1)));
             icsLine("SUMMARY:" + icsText(title)); icsLine("LOCATION:" + icsText(location));
             icsLine("DESCRIPTION:" + icsText(description.join('\n'))); icsLine("END:VEVENT");
         }
