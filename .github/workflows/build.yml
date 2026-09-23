@@ -89,6 +89,9 @@ jobs:
           target: desktop
           arch: win64_msvc2022_64
           modules: qtshadertools
+          setup-python: false
+          # Qt 6.11 uses compiler-specific repository directories.
+          aqtsource: 'git+https://github.com/miurahr/aqtinstall.git@076e1659807d0b362a3ed684d54c2e9c775eb9c7'
           cache: true
 
       - name: Install resource tools
