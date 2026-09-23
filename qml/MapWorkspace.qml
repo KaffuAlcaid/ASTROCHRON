@@ -34,10 +34,13 @@ ColumnLayout {
         id: mapFollowAction
         text: qsTr("跟随卫星")
         icon.source: "qrc:/icons/crosshair.svg"
-        checkable: true
-        checked: workspace.following
         enabled: workspace.satellites.selectedId !== "0" && workspace.clock.hasObserver
-        onTriggered: workspace.following = checked
+        onTriggered: {
+            workspace.picking = false;
+            workspace.following = true;
+            worldMap.zoom = 9;
+            workspace.followTarget();
+        }
     }
     Action {
         id: mapZoomInAction
@@ -134,6 +137,7 @@ ColumnLayout {
         title: workspace.observation.name || qsTr("全球地图")
         hasTarget: workspace.satellites.selectedId !== "0"
         expanded: workspace.expanded
+        following: workspace.following
         followAction: mapFollowAction
         zoomInAction: mapZoomInAction
         zoomOutAction: mapZoomOutAction

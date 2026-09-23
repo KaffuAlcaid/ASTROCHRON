@@ -19,7 +19,7 @@ ToolButton {
     Keys.onReturnPressed: click()
     Keys.onEnterPressed: click()
     background: Rectangle {
-        color: control.down ? Theme.selection : control.checked ? Theme.selection : control.hovered ? Theme.hover : "transparent"
+        color: control.down || control.checked || control.highlighted ? Theme.selection : control.hovered ? Theme.hover : "transparent"
         border.width: control.visualFocus ? 1 : 0
         border.color: Theme.accent
         radius: 3

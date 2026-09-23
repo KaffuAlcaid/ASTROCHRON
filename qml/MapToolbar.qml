@@ -15,6 +15,7 @@ RowLayout {
     property string title
     property bool hasTarget: false
     property bool expanded: false
+    property bool following: false
     signal detailsRequested
     spacing: 2
     Label {
@@ -32,6 +33,7 @@ RowLayout {
     }
     IconButton {
         action: toolbar.followAction
+        highlighted: toolbar.following
         shortcutHint: "F"
     }
     IconButton {
