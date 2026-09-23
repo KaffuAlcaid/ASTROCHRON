@@ -326,6 +326,24 @@ Track track(const Satellite &satellite, double start, double end, const Observer
     appendSample(start);
     for (double time = (std::floor(start / 30) + 1) * 30; time < end; time += 30) appendSample(time);
     if (end > start) appendSample(end);
+    if (!result.samples.isEmpty()) result.passes = predictPasses(satellite, start, end, observer, result.samples);
+    return result;
+}
+
+QVector<Pass> predictPasses(const Satellite &satellite, double start, double end, const Observer &observer, const QVector<State> &samples)
+{
+    QVector<Pass> result;
+    if (end <= start) return result;
+    const auto geometry = observerGeometry(observer);
+    const auto at = [&](double time) { return propagate(satellite, propagationContext(time, geometry)); };
+    QVector<State> calculated;
+    if (samples.isEmpty()) {
+        if (const auto point = at(start)) calculated.append(*point);
+        for (double time = (std::floor(start / 30) + 1) * 30; time < end; time += 30)
+            if (const auto point = at(time)) calculated.append(*point);
+        if (const auto point = at(end)) calculated.append(*point);
+    }
+    const auto &points = samples.isEmpty() ? calculated : samples;
     const auto crossing = [&](double left, double right, bool rising) {
         while (right - left > 0.5) {
             const double middle = (left + right) / 2;
@@ -338,20 +356,20 @@ Track track(const Satellite &satellite, double start, double end, const Observer
     };
     std::optional<State> rise;
     bool clipped = false;
-    for (qsizetype i = 0; i < result.samples.size(); ++i) {
-        const auto &sample = result.samples[i];
-        if (i > 0 && sample.time - result.samples[i - 1].time > 31) rise.reset();
+    for (qsizetype i = 0; i < points.size(); ++i) {
+        const auto &sample = points[i];
+        if (i > 0 && sample.time - points[i - 1].time > 31) rise.reset();
         const bool above = sample.elevation >= observer.minimumElevation;
         if (above && !rise) {
-            clipped = i == 0 || sample.time - result.samples[i - 1].time > 31;
-            rise = clipped ? std::optional(sample) : crossing(result.samples[i - 1].time, sample.time, true);
+            clipped = i == 0 || sample.time - points[i - 1].time > 31;
+            rise = clipped ? std::optional(sample) : crossing(points[i - 1].time, sample.time, true);
         }
-        if (rise && (!above || i + 1 == result.samples.size())) {
+        if (rise && (!above || i + 1 == points.size())) {
             const bool endsAfter = above;
-            const auto set = endsAfter ? std::optional(sample) : crossing(result.samples[i - 1].time, sample.time, false);
+            const auto set = endsAfter ? std::optional(sample) : crossing(points[i - 1].time, sample.time, false);
             if (!set) { rise.reset(); continue; }
             auto highest = *rise;
-            for (const auto &point : result.samples)
+            for (const auto &point : points)
                 if (point.time >= rise->time && point.time <= set->time && point.elevation > highest.elevation) highest = point;
             double left = std::max(rise->time, highest.time - 30), right = std::min(set->time, highest.time + 30);
             while (right - left > 0.5) {
@@ -374,7 +392,7 @@ Track track(const Satellite &satellite, double start, double end, const Observer
                     }
                 }
                 if (visibleStart) pass.visibleIntervals.append({*visibleStart, set->time});
-                result.passes.append(pass);
+                result.append(pass);
             }
             rise.reset();
         }

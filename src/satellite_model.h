@@ -49,6 +49,10 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(double receiveFrequency READ receiveFrequency WRITE setReceiveFrequency NOTIFY receiveFrequencyChanged)
     Q_PROPERTY(QVariantMap photometry READ photometry NOTIFY photometryChanged)
     Q_PROPERTY(QString photometryStatus READ photometryStatus NOTIFY photometryChanged)
+    Q_PROPERTY(QVariantMap planInfo READ planInfo NOTIFY planChanged)
+    Q_PROPERTY(QVariantList planPasses READ planPasses NOTIFY planChanged)
+    Q_PROPERTY(bool planBusy READ planBusy NOTIFY planChanged)
+    Q_PROPERTY(QString planStatus READ planStatus NOTIFY planChanged)
 
 public:
     explicit SatelliteModel(QObject *parent = nullptr);
@@ -109,6 +113,12 @@ public:
     Q_INVOKABLE void exportSelected(const QUrl &url);
     Q_INVOKABLE void loadSnapshot(qint64 id);
     Q_INVOKABLE void copyDetails();
+    Q_INVOKABLE void preparePlan();
+    Q_INVOKABLE bool exportPlan(const QUrl &url, const QString &format);
+    QVariantMap planInfo() const;
+    QVariantList planPasses() const;
+    bool planBusy() const { return m_planBusy; }
+    QString planStatus() const { return m_planStatus ? m_planStatus() : QString(); }
 
 signals:
     void clockChanged();
@@ -125,6 +135,7 @@ signals:
     void photometryChanged();
     void localizedChanged();
     void detailsChanged();
+    void planChanged();
 
 private:
     friend class CatalogModel;
@@ -187,4 +198,16 @@ private:
     bool m_previewBusy = false, m_previewPending = false;
     quint64 m_previewRevision = 0;
     double m_previewTime = 0;
+    struct Plan {
+        Orbit::Satellite satellite;
+        Orbit::Observer observer;
+        QString observerName, source;
+        QTimeZone zone;
+        double start = 0, end = 0, height = 0;
+        bool heightKnown = false;
+        QVector<Orbit::Pass> passes;
+    } m_plan;
+    bool m_planBusy = false;
+    quint64 m_planRevision = 0;
+    std::function<QString()> m_planStatus;
 };

@@ -86,6 +86,7 @@ std::optional<State> position(const Satellite &satellite, const PropagationConte
 std::optional<State> look(const Satellite &satellite, const PropagationContext &context);
 std::optional<State> propagate(const Satellite &satellite, const PropagationContext &context);
 Track track(const Satellite &satellite, double start, double end, const Observer &observer, const Track &previous = {});
+QVector<Pass> predictPasses(const Satellite &satellite, double start, double end, const Observer &observer, const QVector<State> &samples = {});
 std::optional<double> apparentMagnitude(const State &state, double referenceMagnitude, double referencePhase);
 QString displayName(const Satellite &satellite);
 QString illuminationName(int illumination);

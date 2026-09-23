@@ -56,7 +56,7 @@ qt_add_qml_module(astrochron
         qml/SatelliteSidebar.qml qml/MapToolbar.qml qml/LayerMenu.qml
         qml/MapWorkspace.qml qml/PassTable.qml qml/ObservationPane.qml qml/Timeline.qml
         qml/ObserverDialog.qml qml/SettingsDialog.qml qml/LanguageSettings.qml
-        qml/CatalogDialog.qml qml/PhotometryDialog.qml
+        qml/CatalogDialog.qml qml/PhotometryDialog.qml qml/PlanDialog.qml
     SOURCES
         src/app_state.h src/app_state.cpp
         src/map_data.h src/map_data.cpp

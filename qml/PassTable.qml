@@ -8,6 +8,7 @@ ColumnLayout {
     required property AppState clock
     required property SatelliteModel satellites
     property var nextPass: ({})
+    signal planRequested
     spacing: 6
     RowLayout {
         Layout.fillWidth: true
@@ -32,6 +33,12 @@ ColumnLayout {
             text: qsTr("最低高度角 ") + table.clock.minimumElevation.toFixed(0) + "°"
             font.pixelSize: 11
             color: Theme.muted
+        }
+        IconButton {
+            icon.source: "qrc:/icons/download.svg"
+            tip: qsTr("导出观测计划")
+            enabled: table.clock.hasObserver && table.satellites.selectedId !== "0"
+            onClicked: table.planRequested()
         }
     }
     ItemDelegate {

@@ -231,6 +231,7 @@ ApplicationWindow {
                 clock: appState
                 satellites: satelliteModel
                 nextPass: window.nextPass
+                onPlanRequested: planDialog.openPlan()
             }
         }
         Item {
@@ -297,6 +298,10 @@ ApplicationWindow {
     }
     PhotometryDialog {
         id: photometryDialog
+        satellites: satelliteModel
+    }
+    PlanDialog {
+        id: planDialog
         satellites: satelliteModel
     }
     FileDialog {

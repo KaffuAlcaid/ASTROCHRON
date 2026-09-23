@@ -1049,6 +1049,10 @@ Third-party licenses and attribution: THIRD_PARTY_NOTICES.md and the licenses fo
             <translation>Min. elevation </translation>
         </message>
         <message>
+            <source>导出观测计划</source>
+            <translation>Export observation plan</translation>
+        </message>
+        <message>
             <source>正在过境</source>
             <translation>Pass in progress</translation>
         </message>
@@ -1131,7 +1135,7 @@ Range at peak </translation>
         </message>
         <message>
             <source>待填写</source>
-            <translation>Enter a value</translation>
+            <translation>Not specified</translation>
         </message>
         <message>
             <source>参考距离</source>
@@ -1224,6 +1228,53 @@ Range at peak </translation>
         <message>
             <source>导入</source>
             <translation>Import</translation>
+        </message>
+    </context>
+    <context>
+        <name>PlanDialog</name>
+        <message>
+            <source>导出观测计划</source>
+            <translation>Export observation plan</translation>
+        </message>
+        <message>
+            <source>最低高度角 %1°</source>
+            <translation>Minimum elevation %1°</translation>
+        </message>
+        <message>
+            <source>时段内最高</source>
+            <translation>Maximum within interval</translation>
+        </message>
+        <message>
+            <source>峰值</source>
+            <translation>Peak</translation>
+        </message>
+        <message>
+            <source>光学</source>
+            <translation>Optical</translation>
+        </message>
+        <message>
+            <source>正在计算观测计划</source>
+            <translation>Calculating observation plan</translation>
+        </message>
+        <message>
+            <source>导出 CSV</source>
+            <translation>Export CSV</translation>
+        </message>
+        <message>
+            <source>导出 ICS</source>
+            <translation>Export ICS</translation>
+        </message>
+        <message>
+            <source>保存观测计划</source>
+            <translation>Save observation plan</translation>
+        </message>
+        <message>
+            <source>CSV 文件 (*.csv)</source>
+            <translation>CSV files (*.csv)</translation>
+        </message>
+        <message>
+            <source>日历文件 (*.ics)</source>
+            <translation>Calendar files (*.ics)</translation>
         </message>
     </context>
     <context>
@@ -1467,6 +1518,182 @@ Range at peak </translation>
         <message>
             <source>轨道根数已保存</source>
             <translation>Orbital elements saved</translation>
+        </message>
+        <message>
+            <source>12 h 内暂无满足高度角条件的过境</source>
+            <translation>No passes above the elevation limit in 12 h</translation>
+        </message>
+        <message>
+            <source>%1（%2°, %3°）</source>
+            <translation>%1 (%2°, %3°)</translation>
+        </message>
+        <message>
+            <source>卫星</source>
+            <translation>Satellite</translation>
+        </message>
+        <message>
+            <source>开始（UTC）</source>
+            <translation>Start (UTC)</translation>
+        </message>
+        <message>
+            <source>最高点（UTC）</source>
+            <translation>Peak (UTC)</translation>
+        </message>
+        <message>
+            <source>结束（UTC）</source>
+            <translation>End (UTC)</translation>
+        </message>
+        <message>
+            <source>最高高度角（°）</source>
+            <translation>Maximum elevation (°)</translation>
+        </message>
+        <message>
+            <source>持续时间（s）</source>
+            <translation>Duration (s)</translation>
+        </message>
+        <message>
+            <source>开始方位角（°）</source>
+            <translation>Start azimuth (°)</translation>
+        </message>
+        <message>
+            <source>结束方位角（°）</source>
+            <translation>End azimuth (°)</translation>
+        </message>
+        <message>
+            <source>光学条件</source>
+            <translation>Optical conditions</translation>
+        </message>
+        <message>
+            <source>光学区间（UTC）</source>
+            <translation>Optical intervals (UTC)</translation>
+        </message>
+        <message>
+            <source>轨道历元（UTC）</source>
+            <translation>Orbit epoch (UTC)</translation>
+        </message>
+        <message>
+            <source>观测地点</source>
+            <translation>Observer location</translation>
+        </message>
+        <message>
+            <source>纬度（°）</source>
+            <translation>Latitude (°)</translation>
+        </message>
+        <message>
+            <source>经度（°）</source>
+            <translation>Longitude (°)</translation>
+        </message>
+        <message>
+            <source>海拔（m）</source>
+            <translation>Elevation (m)</translation>
+        </message>
+        <message>
+            <source>最低高度角（°）</source>
+            <translation>Minimum elevation (°)</translation>
+        </message>
+        <message>
+            <source>时区</source>
+            <translation>Time zone</translation>
+        </message>
+        <message>
+            <source>开始（当地时间）</source>
+            <translation>Start (local time)</translation>
+        </message>
+        <message>
+            <source>最高点（当地时间）</source>
+            <translation>Peak (local time)</translation>
+        </message>
+        <message>
+            <source>结束（当地时间）</source>
+            <translation>End (local time)</translation>
+        </message>
+        <message>
+            <source>起点截断</source>
+            <translation>Start clipped</translation>
+        </message>
+        <message>
+            <source>终点截断</source>
+            <translation>End clipped</translation>
+        </message>
+        <message>
+            <source>数据来源</source>
+            <translation>Data source</translation>
+        </message>
+        <message>
+            <source>条件欠佳</source>
+            <translation>Unfavorable</translation>
+        </message>
+        <message>
+            <source>具备光学条件</source>
+            <translation>Optical conditions met</translation>
+        </message>
+        <message>
+            <source>ASTROCHRON · %1观测时段（时段内最高 %2°）</source>
+            <translation>ASTROCHRON · %1 observation interval (maximum within interval %2°)</translation>
+        </message>
+        <message>
+            <source>ASTROCHRON · %1过境（峰值 %2°）</source>
+            <translation>ASTROCHRON · %1 pass (peak %2°)</translation>
+        </message>
+        <message>
+            <source>时段内最高点：%1</source>
+            <translation>Peak within interval: %1</translation>
+        </message>
+        <message>
+            <source>最高点：%1</source>
+            <translation>Peak: %1</translation>
+        </message>
+        <message>
+            <source>开始方位：%1 %2°；结束方位：%3 %4°</source>
+            <translation>Start azimuth: %1 %2°; end azimuth: %3 %4°</translation>
+        </message>
+        <message>
+            <source>最低高度角：%1°</source>
+            <translation>Minimum elevation: %1°</translation>
+        </message>
+        <message>
+            <source>当地时间：%1 / %2；时区：%3</source>
+            <translation>Local time: %1 / %2; time zone: %3</translation>
+        </message>
+        <message>
+            <source>轨道历元（UTC）：%1</source>
+            <translation>Orbit epoch (UTC): %1</translation>
+        </message>
+        <message>
+            <source>观测地点：%1</source>
+            <translation>Observer: %1</translation>
+        </message>
+        <message>
+            <source>海拔：%1</source>
+            <translation>Elevation: %1</translation>
+        </message>
+        <message>
+            <source>待填写</source>
+            <translation>Not specified</translation>
+        </message>
+        <message>
+            <source>光学区间（UTC）：%1</source>
+            <translation>Optical intervals (UTC): %1</translation>
+        </message>
+        <message>
+            <source>数据来源：%1</source>
+            <translation>Source: %1</translation>
+        </message>
+        <message>
+            <source>时段开始前已高于最低高度角</source>
+            <translation>Above the minimum elevation before the interval starts</translation>
+        </message>
+        <message>
+            <source>时段结束时仍高于最低高度角</source>
+            <translation>Above the minimum elevation when the interval ends</translation>
+        </message>
+        <message>
+            <source>观测计划保存失败：%1</source>
+            <translation>Could not save observation plan: %1</translation>
+        </message>
+        <message>
+            <source>观测计划已保存</source>
+            <translation>Observation plan saved</translation>
         </message>
         <message>
             <source>本地轨道数据已载入</source>
