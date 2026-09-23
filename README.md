@@ -17,13 +17,21 @@
 - **观测信息**：查看方位角、高度角、距离、视星等估算和天气，按接收频率计算多普勒频移
 - **轨道资料**：查阅历元、完整轨道根数、数据来源与日期，导入 TLE / OMM 文件，使用本地保存的轨道数据
 - **观测地点**：搜索城市、输入经纬度或在地图选点，设置海拔、最低高度角与时区，保存常用地点
+- **界面语言**：支持简体中文、English 和跟随系统，可在首次启动时或设置中选择，重启后生效
 
 ## 下载
 
+当前版本：[v0.1.0-preview](https://github.com/KaffuAlcaid/ASTROCHRON/releases/tag/v0.1.0-preview)（测试版），适用于 Windows 11 x64
+
+| 下载 | 使用方式 | 大小 |
+| --- | --- | --- |
+| [Windows 安装器](https://github.com/KaffuAlcaid/ASTROCHRON/releases/download/v0.1.0-preview/ASTROCHRON-v0.1.0-preview-windows-x64-setup.exe) | 通过安装向导选择安装目录 | 24.0 MiB |
+| [免安装 ZIP](https://github.com/KaffuAlcaid/ASTROCHRON/releases/download/v0.1.0-preview/ASTROCHRON-v0.1.0-preview-windows-x64.zip) | 完整解压后运行 | 30.2 MiB |
+
 ## 快速开始
 
-1. 完整解压应用包，运行 `ASTROCHRON.exe`
-2. 首次启动时搜索并选择观测城市，确认地点，最低高度角保持默认 `10°`
+1. 安装并启动程序，或解压 ZIP 后运行 `ASTROCHRON.exe`
+2. 首次启动时选择语言和观测城市，确认地点，最低高度角保持默认 `10°`
 3. 等待轨道目录载入，在左侧观测清单选择一个目标，例如“国际空间站”
 4. 点击地图下方的一条过境记录，地图、天空图和观测信息会跳到该次过境的最高点
 5. 拖动底部时间轴查看过境前后的位置，点击“回到现在”恢复实时跟踪
