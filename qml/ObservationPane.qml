@@ -488,13 +488,25 @@ ColumnLayout {
                     text: qsTr("本地获取时间")
                     color: Theme.muted
                 }
-                ComboBox {
+                RowLayout {
                     Layout.fillWidth: true
-                    model: pane.satellites.snapshots
-                    textRole: "label"
-                    valueRole: "id"
-                    currentIndex: pane.snapshotIndex()
-                    onActivated: pane.satellites.loadSnapshot(currentValue)
+                    ComboBox {
+                        Layout.fillWidth: true
+                        model: pane.satellites.snapshots
+                        textRole: "label"
+                        valueRole: "id"
+                        currentIndex: pane.snapshotIndex()
+                        enabled: !pane.satellites.storageBusy
+                        onActivated: pane.satellites.loadSnapshot(currentValue)
+                    }
+                    IconButton {
+                        icon.source: "qrc:/icons/pin.svg"
+                        tip: pane.satellites.snapshotImported ? qsTr("本地导入长期保留") : pane.satellites.snapshotPinned ? qsTr("取消固定") : qsTr("固定此快照")
+                        checkable: true
+                        checked: pane.satellites.snapshotPinned
+                        enabled: pane.satellites.snapshotId > 0 && !pane.satellites.snapshotImported && !pane.satellites.storageBusy
+                        onClicked: pane.satellites.pinSnapshot(pane.satellites.snapshotId, checked)
+                    }
                 }
                 Label {
                     text: pane.snapshotIndex() > 0 ? qsTr("历史根数回放") : qsTr("使用最近获取的根数")

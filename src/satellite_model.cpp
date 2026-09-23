@@ -82,19 +82,10 @@ SatelliteModel::SatelliteModel(QObject *parent) : QAbstractListModel(parent)
     m_database = QSqlDatabase::addDatabase("QSQLITE", QStringLiteral("orbits-%1").arg(reinterpret_cast<quintptr>(this)));
     m_database.setDatabaseName(directory + "/orbits.sqlite");
     if (!m_database.open()) { setStatus([error = m_database.lastError().text()] { return tr("轨道资料库打开失败：") + error; }); return; }
+    m_snapshotRetention = m_settings.value("data/snapshotRetention", 10).toInt() == 5 ? 5 : 10;
+    m_autoCleanup = m_settings.value("data/autoCleanup", false).toBool();
+    if (!initializeDatabase()) { m_database.close(); return; }
     QSqlQuery query(m_database);
-    if (!query.exec("CREATE TABLE IF NOT EXISTS snapshots (id INTEGER PRIMARY KEY, group_key TEXT NOT NULL, acquired INTEGER NOT NULL, source TEXT NOT NULL, payload BLOB NOT NULL)"))
-        setStatus([error = query.lastError().text()] { return tr("轨道资料库初始化失败：") + error; });
-    if (!query.exec("CREATE TABLE IF NOT EXISTS photometry (norad INTEGER PRIMARY KEY, magnitude REAL NOT NULL, phase INTEGER NOT NULL, source TEXT NOT NULL, manual INTEGER NOT NULL, source_date TEXT NOT NULL DEFAULT '', recorded_at INTEGER NOT NULL DEFAULT 0)")) {
-        m_photometryStatus = [error = query.lastError().text()] { return tr("星等资料库打开失败：") + error; };
-        return;
-    }
-    const auto columns = m_database.record("photometry");
-    if ((!columns.contains("source_date") && !query.exec("ALTER TABLE photometry ADD COLUMN source_date TEXT NOT NULL DEFAULT ''"))
-        || (!columns.contains("recorded_at") && !query.exec("ALTER TABLE photometry ADD COLUMN recorded_at INTEGER NOT NULL DEFAULT 0"))) {
-        m_photometryStatus = [error = query.lastError().text()] { return tr("星等资料日期保存失败：") + error; };
-        return;
-    }
     if (query.exec("SELECT norad, magnitude, phase, source, manual, source_date, recorded_at FROM photometry"))
         while (query.next()) m_photometry.insert(query.value(0).toLongLong(), {query.value(1).toDouble(), query.value(2).toInt(), query.value(3).toString(), query.value(4).toBool(), query.value(5).toString(), query.value(6).toLongLong()});
 }
@@ -107,6 +98,208 @@ SatelliteModel::~SatelliteModel()
     m_database.close();
     m_database = {};
     QSqlDatabase::removeDatabase(name);
+}
+
+bool SatelliteModel::initializeDatabase()
+{
+    QSqlQuery query(m_database);
+    QString error;
+    const auto exec = [&](const QString &sql) {
+        if (query.exec(sql)) return true;
+        error = query.lastError().text(); return false;
+    };
+    if (!exec("PRAGMA user_version") || !query.next()) return false;
+    int version = query.value(0).toInt();
+    query.finish();
+    if (version > 2) {
+        setStatus([] { return tr("数据库版本较高，请使用对应版本的 ASTROCHRON"); }); return false;
+    }
+    if (m_database.tables().isEmpty() && !exec("PRAGMA auto_vacuum=INCREMENTAL")) {
+        setStatus([error] { return tr("数据库初始化失败：%1").arg(error); }); return false;
+    }
+    while (version < 2) {
+        bool ok = m_database.transaction();
+        if (!ok) error = m_database.lastError().text();
+        if (ok && version == 0) {
+            ok = exec("CREATE TABLE IF NOT EXISTS snapshots (id INTEGER PRIMARY KEY, group_key TEXT NOT NULL, acquired INTEGER NOT NULL, source TEXT NOT NULL, payload BLOB NOT NULL)")
+                && exec("CREATE TABLE IF NOT EXISTS photometry (norad INTEGER PRIMARY KEY, magnitude REAL NOT NULL, phase INTEGER NOT NULL, source TEXT NOT NULL, manual INTEGER NOT NULL)");
+            const auto columns = m_database.record("photometry");
+            if (ok && !columns.contains("source_date")) ok = exec("ALTER TABLE photometry ADD COLUMN source_date TEXT NOT NULL DEFAULT ''");
+            if (ok && !columns.contains("recorded_at")) ok = exec("ALTER TABLE photometry ADD COLUMN recorded_at INTEGER NOT NULL DEFAULT 0");
+        } else if (ok && version == 1) {
+            ok = exec("ALTER TABLE snapshots ADD COLUMN origin TEXT NOT NULL DEFAULT 'online'")
+                && exec("ALTER TABLE snapshots ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
+                && exec("UPDATE snapshots SET origin='import' WHERE group_key='local'")
+                && exec("CREATE INDEX snapshots_group_acquired ON snapshots(group_key, acquired DESC, id DESC)");
+        }
+        if (ok) ok = exec(QStringLiteral("PRAGMA user_version=%1").arg(version + 1));
+        if (ok && !m_database.commit()) { ok = false; error = m_database.lastError().text(); }
+        if (!ok) {
+            m_database.rollback();
+            setStatus([error] { return tr("数据库升级失败：%1").arg(error); }); return false;
+        }
+        ++version;
+    }
+    return true;
+}
+
+QVariantMap SatelliteModel::storageInfo() const
+{
+    if (!m_database.isOpen()) return {};
+    QSqlQuery query(m_database);
+    qint64 count = 0, pinned = 0, imported = 0, pages = 0, free = 0, pageSize = 0;
+    if (query.exec("SELECT COUNT(*), SUM(pinned), SUM(origin='import' OR group_key='local') FROM snapshots") && query.next()) {
+        count = query.value(0).toLongLong(); pinned = query.value(1).toLongLong(); imported = query.value(2).toLongLong();
+    }
+    if (query.exec("PRAGMA page_count") && query.next()) pages = query.value(0).toLongLong();
+    if (query.exec("PRAGMA freelist_count") && query.next()) free = query.value(0).toLongLong();
+    if (query.exec("PRAGMA page_size") && query.next()) pageSize = query.value(0).toLongLong();
+    return {{"count", count}, {"pinned", pinned}, {"imported", imported}, {"bytes", pages * pageSize}, {"freeBytes", free * pageSize}};
+}
+
+QVariantList SatelliteModel::cleanupCandidates() const
+{
+    QVariantList result;
+    if (!m_database.isOpen()) return result;
+    QSet<qint64> used;
+    for (const auto &source : m_sources) used.insert(source.snapshot);
+    for (const auto &source : m_groupSources) used.insert(source.snapshot);
+    QHash<QString, int> counts;
+    QHash<QString, QString> names;
+    for (const auto &value : groups()) { const auto group = value.toMap(); names.insert(group.value("key").toString(), group.value("name").toString()); }
+    QSqlQuery query(m_database);
+    if (!query.exec("SELECT id, group_key, acquired, source, length(payload) FROM snapshots WHERE origin='online' AND group_key<>'local' AND pinned=0 ORDER BY group_key, acquired DESC, id DESC")) return result;
+    while (query.next()) {
+        const auto group = query.value(1).toString();
+        const auto id = query.value(0).toLongLong();
+        if (++counts[group] <= m_snapshotRetention || used.contains(id)) continue;
+        result.append(QVariantMap{{"id", id}, {"group", names.value(group, group)}, {"source", query.value(3)},
+            {"acquired", formatTime(query.value(2).toDouble(), m_clock ? QTimeZone(m_clock->timeZone().toUtf8()) : QTimeZone::systemTimeZone(), "yyyy-MM-dd HH:mm:ss")},
+            {"size", number(query.value(4).toLongLong() / 1024.0, 1) + " KiB"}});
+    }
+    return result;
+}
+
+bool SatelliteModel::snapshotPinned() const
+{
+    QSqlQuery query(m_database);
+    query.prepare("SELECT pinned FROM snapshots WHERE id=?"); query.addBindValue(snapshotId());
+    return query.exec() && query.next() && query.value(0).toBool();
+}
+
+bool SatelliteModel::snapshotImported() const
+{
+    return m_sources.value(m_selected).group == "local";
+}
+
+void SatelliteModel::pinSnapshot(qint64 id, bool pinned)
+{
+    if (m_storageBusy || id <= 0) return;
+    QSqlQuery query(m_database);
+    query.prepare("UPDATE snapshots SET pinned=? WHERE id=? AND origin='online' AND group_key<>'local'");
+    query.addBindValue(pinned ? 1 : 0); query.addBindValue(id);
+    if (!query.exec()) m_storageStatus = [error = query.lastError().text()] { return tr("快照保存失败：%1").arg(error); };
+    else m_storageStatus = {};
+    emit sourceChanged(); emit storageChanged();
+}
+
+void SatelliteModel::setSnapshotRetention(int count)
+{
+    count = count == 5 ? 5 : 10;
+    if (m_snapshotRetention == count) return;
+    m_snapshotRetention = count; m_settings.setValue("data/snapshotRetention", count);
+    emit storageChanged();
+}
+
+bool SatelliteModel::pruneSnapshots()
+{
+    if (!m_database.isOpen() || m_storageBusy) return false;
+    const auto candidates = cleanupCandidates();
+    if (candidates.isEmpty()) return true;
+    QString error;
+    bool ok = m_database.transaction();
+    if (!ok) error = m_database.lastError().text();
+    QSqlQuery query(m_database);
+    query.prepare("DELETE FROM snapshots WHERE id=? AND pinned=0 AND origin='online' AND group_key<>'local'");
+    for (const auto &entry : candidates) {
+        if (!ok) break;
+        query.bindValue(0, entry.toMap().value("id"));
+        if (!query.exec()) { ok = false; error = query.lastError().text(); }
+    }
+    query.finish();
+    if (ok && !m_database.commit()) { ok = false; error = m_database.lastError().text(); }
+    if (!ok) {
+        m_database.rollback();
+        m_storageStatus = [error] { return tr("历史资料清理失败：%1").arg(error); };
+    } else {
+        m_storageStatus = [count = candidates.size()] { return tr("已清理 %1 份在线历史快照").arg(count); };
+        compactDatabase(false);
+    }
+    emit sourceChanged(); emit storageChanged();
+    return ok;
+}
+
+bool SatelliteModel::enableCleanup()
+{
+    if (!pruneSnapshots()) return false;
+    m_autoCleanup = true; m_settings.setValue("data/autoCleanup", true);
+    emit storageChanged(); return true;
+}
+
+void SatelliteModel::disableCleanup()
+{
+    m_autoCleanup = false; m_settings.setValue("data/autoCleanup", false);
+    emit storageChanged();
+}
+
+void SatelliteModel::compactDatabase(bool full)
+{
+    if (m_storageBusy || !m_database.isOpen()) return;
+    if (m_downloading) {
+        if (full) { m_storageStatus = [] { return tr("轨道下载完成后可整理数据库"); }; emit storageChanged(); }
+        return;
+    }
+    if (!full) {
+        const auto info = storageInfo();
+        QSqlQuery mode(m_database);
+        if (!mode.exec("PRAGMA auto_vacuum") || !mode.next() || mode.value(0).toInt() != 2
+            || info.value("freeBytes").toLongLong() < 16 * 1024 * 1024
+            || info.value("freeBytes").toDouble() < info.value("bytes").toDouble() * 0.2) return;
+    }
+    m_storageBusy = true; m_storageStatus = [] { return tr("正在整理数据库"); };
+    emit storageChanged();
+    m_pool.start([this, path = m_database.databaseName(), full] {
+        const auto connection = QUuid::createUuid().toString();
+        QString error;
+        {
+            auto database = QSqlDatabase::addDatabase("QSQLITE", connection);
+            database.setDatabaseName(path); database.setConnectOptions("QSQLITE_BUSY_TIMEOUT=3000");
+            if (!database.open()) error = database.lastError().text();
+            else {
+                QSqlQuery query(database);
+                if (full) {
+                    if (!query.exec("PRAGMA auto_vacuum=INCREMENTAL") || !query.exec("VACUUM")) error = query.lastError().text();
+                } else {
+                    while (error.isEmpty()) {
+                        if (!query.exec("PRAGMA freelist_count") || !query.next()) { error = query.lastError().text(); break; }
+                        const auto remaining = query.value(0).toLongLong();
+                        query.finish();
+                        if (remaining == 0) break;
+                        if (!query.exec("PRAGMA incremental_vacuum(256)")) error = query.lastError().text();
+                        while (query.next()) {}
+                    }
+                }
+            }
+            database.close();
+        }
+        QSqlDatabase::removeDatabase(connection);
+        QMetaObject::invokeMethod(this, [this, error] {
+            m_storageBusy = false;
+            m_storageStatus = error.isEmpty() ? std::function<QString()>([] { return tr("数据库已整理"); })
+                : std::function<QString()>([error] { return tr("数据库整理失败：%1").arg(error); });
+            emit storageChanged();
+        }, Qt::QueuedConnection);
+    }, -1);
 }
 
 int SatelliteModel::rowCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : static_cast<int>(m_rows.size()); }
@@ -178,6 +371,7 @@ void SatelliteModel::setClock(AppState *clock)
         connect(clock, &AppState::updateFrequencyChanged, this, reschedule);
         connect(clock, &AppState::localizedChanged, this, [this] {
             emit planChanged();
+            emit storageChanged();
             emit localizedChanged(); emit detailsChanged(); emit frameChanged(); emit trajectoryChanged();
             emit previewChanged(); emit sourceChanged(); emit statusChanged(); emit photometryChanged();
             if (!m_rows.isEmpty()) emit dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1));
@@ -197,6 +391,7 @@ void SatelliteModel::setClock(AppState *clock)
             if (previewActive()) { ++m_previewRevision; refreshPreview(); }
         });
         QTimer::singleShot(0, this, [this] {
+            if (!m_database.isOpen()) return;
             QSqlQuery query(m_database);
             if (query.exec("SELECT id FROM snapshots WHERE id IN (SELECT MAX(id) FROM snapshots GROUP BY group_key) ORDER BY acquired")) {
                 QVector<qint64> ids;
@@ -308,9 +503,11 @@ void SatelliteModel::refresh()
 
 bool SatelliteModel::store(const QByteArray &payload, const QString &source, const QString &group)
 {
+    if (m_storageBusy) { setStatus([] { return tr("正在整理数据库，请稍后保存资料"); }); return false; }
     QSqlQuery query(m_database);
-    query.prepare("INSERT INTO snapshots (group_key, acquired, source, payload) VALUES (?, ?, ?, ?)");
+    query.prepare("INSERT INTO snapshots (group_key, acquired, source, payload, origin) VALUES (?, ?, ?, ?, ?)");
     query.addBindValue(group); query.addBindValue(QDateTime::currentSecsSinceEpoch()); query.addBindValue(source); query.addBindValue(payload);
+    query.addBindValue(group == "local" ? "import" : "online");
     if (!query.exec()) { setStatus([error = query.lastError().text()] { return tr("轨道资料保存失败：") + error; }); return false; }
     m_snapshot = query.lastInsertId().toLongLong(); m_source = source;
     return true;
@@ -493,15 +690,17 @@ QVariantList SatelliteModel::snapshots() const
     QVariantList result;
     if (!m_database.isOpen()) return result;
     QSqlQuery query(m_database);
-    query.prepare("SELECT id, acquired, source FROM snapshots WHERE group_key = ? ORDER BY id DESC");
+    query.prepare("SELECT id, acquired, source, pinned, origin FROM snapshots WHERE group_key = ? ORDER BY acquired DESC, id DESC");
     query.addBindValue(m_sources.value(m_selected).group.isEmpty() ? m_group : m_sources.value(m_selected).group);
     if (query.exec()) while (query.next()) result.append(QVariantMap{{"id", query.value(0)},
-        {"label", QDateTime::fromSecsSinceEpoch(query.value(1).toLongLong(), m_clock ? QTimeZone(m_clock->timeZone().toUtf8()) : QTimeZone::systemTimeZone()).toString("yyyy-MM-dd HH:mm:ss")}, {"source", query.value(2)}});
+        {"label", QDateTime::fromSecsSinceEpoch(query.value(1).toLongLong(), m_clock ? QTimeZone(m_clock->timeZone().toUtf8()) : QTimeZone::systemTimeZone()).toString("yyyy-MM-dd HH:mm:ss")
+            + (query.value(3).toBool() ? tr(" · 已固定") : QString())}, {"source", query.value(2)}, {"pinned", query.value(3).toBool()}, {"imported", query.value(4).toString() == "import"}});
     return result;
 }
 
 void SatelliteModel::loadSnapshot(qint64 id)
 {
+    if (m_storageBusy) return;
     QSqlQuery query(m_database);
     query.prepare("SELECT payload, source, group_key FROM snapshots WHERE id = ?"); query.addBindValue(id);
     if (!query.exec() || !query.next()) return;
@@ -593,6 +792,8 @@ void SatelliteModel::install(QVector<Orbit::Satellite> satellites, Source source
     }
     if (selectedWatched()) m_lastWatchedSelection = m_selected;
     filter(); invalidate(); emit selectionChanged(); emit catalogChanged(); emit watchlistChanged(); emit sourceChanged();
+    if (m_autoCleanup && !m_storageBusy) pruneSnapshots();
+    emit storageChanged();
     if (previewActive()) { ++m_previewRevision; refreshPreview(); }
 }
 const Orbit::Satellite *SatelliteModel::selected() const

@@ -281,6 +281,7 @@ ApplicationWindow {
         id: settingsDialog
         clock: appState
         weather: weatherModel
+        satellites: satelliteModel
         mapView: mapWorkspace
     }
     CatalogDialog {

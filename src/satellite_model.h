@@ -53,6 +53,14 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(QVariantList planPasses READ planPasses NOTIFY planChanged)
     Q_PROPERTY(bool planBusy READ planBusy NOTIFY planChanged)
     Q_PROPERTY(QString planStatus READ planStatus NOTIFY planChanged)
+    Q_PROPERTY(QVariantMap storageInfo READ storageInfo NOTIFY storageChanged)
+    Q_PROPERTY(QVariantList cleanupCandidates READ cleanupCandidates NOTIFY storageChanged)
+    Q_PROPERTY(int snapshotRetention READ snapshotRetention WRITE setSnapshotRetention NOTIFY storageChanged)
+    Q_PROPERTY(bool autoCleanup READ autoCleanup NOTIFY storageChanged)
+    Q_PROPERTY(bool storageBusy READ storageBusy NOTIFY storageChanged)
+    Q_PROPERTY(QString storageStatus READ storageStatus NOTIFY storageChanged)
+    Q_PROPERTY(bool snapshotPinned READ snapshotPinned NOTIFY sourceChanged)
+    Q_PROPERTY(bool snapshotImported READ snapshotImported NOTIFY sourceChanged)
 
 public:
     explicit SatelliteModel(QObject *parent = nullptr);
@@ -119,6 +127,20 @@ public:
     QVariantList planPasses() const;
     bool planBusy() const { return m_planBusy; }
     QString planStatus() const { return m_planStatus ? m_planStatus() : QString(); }
+    QVariantMap storageInfo() const;
+    QVariantList cleanupCandidates() const;
+    int snapshotRetention() const { return m_snapshotRetention; }
+    void setSnapshotRetention(int count);
+    bool autoCleanup() const { return m_autoCleanup; }
+    bool storageBusy() const { return m_storageBusy; }
+    QString storageStatus() const { return m_storageStatus ? m_storageStatus() : QString(); }
+    bool snapshotPinned() const;
+    bool snapshotImported() const;
+    Q_INVOKABLE void pinSnapshot(qint64 id, bool pinned);
+    Q_INVOKABLE bool enableCleanup();
+    Q_INVOKABLE void disableCleanup();
+    Q_INVOKABLE void compactDatabase(bool full = true);
+    Q_INVOKABLE void refreshStorage() { emit storageChanged(); }
 
 signals:
     void clockChanged();
@@ -136,6 +158,7 @@ signals:
     void localizedChanged();
     void detailsChanged();
     void planChanged();
+    void storageChanged();
 
 private:
     friend class CatalogModel;
@@ -152,6 +175,8 @@ private:
     void install(QVector<Orbit::Satellite> satellites, Source source);
     void refreshPreview();
     bool store(const QByteArray &payload, const QString &source, const QString &group);
+    bool initializeDatabase();
+    bool pruneSnapshots();
     void setStatus(std::function<QString()> status);
     const Orbit::Satellite *selected() const;
     AppState *m_clock = nullptr;
@@ -210,4 +235,7 @@ private:
     bool m_planBusy = false;
     quint64 m_planRevision = 0;
     std::function<QString()> m_planStatus;
+    int m_snapshotRetention = 10;
+    bool m_autoCleanup = false, m_storageBusy = false;
+    std::function<QString()> m_storageStatus;
 };

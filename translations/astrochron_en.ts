@@ -666,6 +666,18 @@ Orbital plane </translation>
             <translation>Acquisition time</translation>
         </message>
         <message>
+            <source>本地导入长期保留</source>
+            <translation>Local imports are kept</translation>
+        </message>
+        <message>
+            <source>取消固定</source>
+            <translation>Unpin snapshot</translation>
+        </message>
+        <message>
+            <source>固定此快照</source>
+            <translation>Pin snapshot</translation>
+        </message>
+        <message>
             <source>历史根数回放</source>
             <translation>Using historical elements</translation>
         </message>
@@ -1288,18 +1300,6 @@ Range at peak </translation>
             <translation>Unable to open orbit database: </translation>
         </message>
         <message>
-            <source>轨道资料库初始化失败：</source>
-            <translation>Unable to initialize orbit database: </translation>
-        </message>
-        <message>
-            <source>星等资料库打开失败：</source>
-            <translation>Unable to open photometry database: </translation>
-        </message>
-        <message>
-            <source>星等资料日期保存失败：</source>
-            <translation>Unable to save photometry dates: </translation>
-        </message>
-        <message>
             <source>待计算</source>
             <translation>Pending</translation>
         </message>
@@ -1490,6 +1490,10 @@ Range at peak </translation>
         <message>
             <source>，%1 条根数格式异常</source>
             <translation>; %1 invalid element sets</translation>
+        </message>
+        <message>
+            <source>正在整理数据库，请稍后保存资料</source>
+            <translation>Database maintenance is in progress; save data afterwards</translation>
         </message>
         <message>
             <source>轨道资料保存失败：</source>
@@ -1696,6 +1700,10 @@ Range at peak </translation>
             <translation>Observation plan saved</translation>
         </message>
         <message>
+            <source> · 已固定</source>
+            <translation> · Pinned</translation>
+        </message>
+        <message>
             <source>本地轨道数据已载入</source>
             <translation>Local orbital data loaded</translation>
         </message>
@@ -1758,6 +1766,46 @@ Range at peak </translation>
         <message>
             <source>手动填写</source>
             <translation>Manual entry</translation>
+        </message>
+        <message>
+            <source>数据库版本较高，请使用对应版本的 ASTROCHRON</source>
+            <translation>Open this database with a compatible version of ASTROCHRON</translation>
+        </message>
+        <message>
+            <source>数据库初始化失败：%1</source>
+            <translation>Could not initialize database: %1</translation>
+        </message>
+        <message>
+            <source>数据库升级失败：%1</source>
+            <translation>Could not upgrade database: %1</translation>
+        </message>
+        <message>
+            <source>快照保存失败：%1</source>
+            <translation>Could not save snapshot: %1</translation>
+        </message>
+        <message>
+            <source>历史资料清理失败：%1</source>
+            <translation>Could not clean up history: %1</translation>
+        </message>
+        <message>
+            <source>已清理 %1 份在线历史快照</source>
+            <translation>Removed %1 online snapshots</translation>
+        </message>
+        <message>
+            <source>轨道下载完成后可整理数据库</source>
+            <translation>Database maintenance is available after the orbit download finishes</translation>
+        </message>
+        <message>
+            <source>正在整理数据库</source>
+            <translation>Database maintenance in progress</translation>
+        </message>
+        <message>
+            <source>数据库已整理</source>
+            <translation>Database maintenance complete</translation>
+        </message>
+        <message>
+            <source>数据库整理失败：%1</source>
+            <translation>Database maintenance failed: %1</translation>
         </message>
         <message>
             <source>请填写有效的资料日期（YYYY-MM-DD）</source>
@@ -2012,6 +2060,38 @@ Acquired </translation>
             <translation>Weather queries send observer coordinates to Open-Meteo</translation>
         </message>
         <message>
+            <source>数据保存</source>
+            <translation>Data storage</translation>
+        </message>
+        <message>
+            <source>快照 %1 份 · 固定 %2 份 · 本地导入 %3 份</source>
+            <translation>%1 snapshots · %2 pinned · %3 local imports</translation>
+        </message>
+        <message>
+            <source>数据库 %1 MiB · 可回收 %2 MiB</source>
+            <translation>Database %1 MiB · Reclaimable %2 MiB</translation>
+        </message>
+        <message>
+            <source>每组在线历史</source>
+            <translation>Online history per group</translation>
+        </message>
+        <message>
+            <source>份</source>
+            <translation>snapshots</translation>
+        </message>
+        <message>
+            <source>自动清理在线历史</source>
+            <translation>Automatically clean up online history</translation>
+        </message>
+        <message>
+            <source>查看待清理记录</source>
+            <translation>Review older snapshots</translation>
+        </message>
+        <message>
+            <source>整理数据库</source>
+            <translation>Compact database</translation>
+        </message>
+        <message>
             <source>软件更新</source>
             <translation>Software updates</translation>
         </message>
@@ -2049,6 +2129,37 @@ Acquired </translation>
         <message>
             <source>东</source>
             <translation>E</translation>
+        </message>
+    </context>
+    <context>
+        <name>SnapshotDialog</name>
+        <message>
+            <source>在线历史快照</source>
+            <translation>Online snapshot history</translation>
+        </message>
+        <message>
+            <source>每组保留最近 %1 份在线快照，固定记录和本地导入长期保留</source>
+            <translation>Keep the latest %1 online snapshots per group, plus pinned snapshots and local imports</translation>
+        </message>
+        <message>
+            <source>待清理 %1 份</source>
+            <translation>%1 snapshots to remove</translation>
+        </message>
+        <message>
+            <source>固定此快照</source>
+            <translation>Pin snapshot</translation>
+        </message>
+        <message>
+            <source>暂无待清理记录</source>
+            <translation>No snapshots to remove</translation>
+        </message>
+        <message>
+            <source>清理以上记录</source>
+            <translation>Remove listed snapshots</translation>
+        </message>
+        <message>
+            <source>清理并启用自动清理</source>
+            <translation>Remove and enable automatic cleanup</translation>
         </message>
     </context>
     <context>

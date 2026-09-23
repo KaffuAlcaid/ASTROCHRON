@@ -56,7 +56,7 @@ qt_add_qml_module(astrochron
         qml/SatelliteSidebar.qml qml/MapToolbar.qml qml/LayerMenu.qml
         qml/MapWorkspace.qml qml/PassTable.qml qml/ObservationPane.qml qml/Timeline.qml
         qml/ObserverDialog.qml qml/SettingsDialog.qml qml/LanguageSettings.qml
-        qml/CatalogDialog.qml qml/PhotometryDialog.qml qml/PlanDialog.qml
+        qml/CatalogDialog.qml qml/PhotometryDialog.qml qml/PlanDialog.qml qml/SnapshotDialog.qml
     SOURCES
         src/app_state.h src/app_state.cpp
         src/map_data.h src/map_data.cpp
@@ -111,6 +111,7 @@ qt_add_resources(astrochron icons
         assets/icons/refresh-cw.svg assets/icons/download.svg assets/icons/folder-open.svg
         assets/icons/copy.svg assets/icons/crosshair.svg
         assets/icons/info.svg
+        assets/icons/pin.svg
         assets/icons/x.svg assets/icons/chevron-down.svg assets/icons/chevron-right.svg
 )
 qt_add_resources(astrochron app_icon
