@@ -11,7 +11,6 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QNetworkReply>
-#include <QProcess>
 #include <QUrlQuery>
 #include <QtEndian>
 #include <cmath>
@@ -22,7 +21,8 @@ AppState::AppState(QObject *parent) : QObject(parent), m_reference(QDateTime::cu
 {
     m_language = m_settings.value("appearance/language", "system").toString();
     if (m_language != "system" && m_language != "zh_CN" && m_language != "en") m_language = "system";
-    m_startupLanguage = m_language;
+    connect(this, &AppState::observerChanged, this, &AppState::localizedChanged);
+    connect(this, &AppState::elevationChanged, this, &AppState::localizedChanged);
     m_observerName = m_settings.value("observer/name", tr("台北")).toString();
     m_hasObserver = m_settings.contains("observer/name") && m_settings.contains("observer/latitude") && m_settings.contains("observer/longitude");
     m_latitude = m_settings.value("observer/latitude", 25.0330).toDouble();
@@ -156,7 +156,7 @@ QString AppState::placeName(const QString &name, double latitude, double longitu
     if (name == QStringLiteral("地图选点") || name == QStringLiteral("Map location")) return tr("地图选点");
     return name;
 }
-QString AppState::observerName() const { return placeName(m_observerName, m_latitude, m_longitude); }
+QString AppState::observerName() const { return m_hasObserver ? placeName(m_observerName, m_latitude, m_longitude) : tr("台北"); }
 QString AppState::elevationStatus() const { return tr(m_elevationStatus.toUtf8().constData()); }
 QVariantList AppState::savedObservers() const
 {
@@ -353,10 +353,8 @@ void AppState::setLanguage(const QString &language)
     emit languageChanged();
 }
 
-bool AppState::restart()
+void AppState::retranslate()
 {
-    m_settings.sync();
-    if (!QProcess::startDetached(QCoreApplication::applicationFilePath(), QCoreApplication::arguments().mid(1))) return false;
-    QCoreApplication::quit();
-    return true;
+    emit localizedChanged();
+    emit timeChanged();
 }

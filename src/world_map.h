@@ -39,6 +39,7 @@ public:
     Q_INVOKABLE void resetView();
     Q_INVOKABLE void centerOn(double longitude, double latitude);
     Q_INVOKABLE QPointF coordinateAt(double x, double y) const;
+    Q_INVOKABLE void updateLabels();
 
 signals:
     void viewChanged();
@@ -53,7 +54,6 @@ protected:
 
 private:
     void updateView();
-    void updateLabels();
     QPointF screenPosition(double longitude, double latitude) const;
     double m_zoom = 1;
     double m_longitude = 0;

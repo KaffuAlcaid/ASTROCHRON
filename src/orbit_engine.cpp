@@ -359,8 +359,8 @@ QString illuminationName(int value)
 }
 QString directionName(double azimuth)
 {
-    static const QStringList names{QCoreApplication::translate("Orbit", "北"), QCoreApplication::translate("Orbit", "东北"), QCoreApplication::translate("Orbit", "东"), QCoreApplication::translate("Orbit", "东南"),
-                                   QCoreApplication::translate("Orbit", "南"), QCoreApplication::translate("Orbit", "西南"), QCoreApplication::translate("Orbit", "西"), QCoreApplication::translate("Orbit", "西北")};
-    return names[static_cast<int>(std::lround(azimuth / 45.0)) % 8];
+    static const char *names[]{QT_TRANSLATE_NOOP("Orbit", "北"), QT_TRANSLATE_NOOP("Orbit", "东北"), QT_TRANSLATE_NOOP("Orbit", "东"), QT_TRANSLATE_NOOP("Orbit", "东南"),
+        QT_TRANSLATE_NOOP("Orbit", "南"), QT_TRANSLATE_NOOP("Orbit", "西南"), QT_TRANSLATE_NOOP("Orbit", "西"), QT_TRANSLATE_NOOP("Orbit", "西北")};
+    return QCoreApplication::translate("Orbit", names[static_cast<int>(std::lround(azimuth / 45.0)) % 8]);
 }
 }

@@ -226,18 +226,6 @@ Orbital plane </translation>
             <source>跟随系统</source>
             <translation>System default</translation>
         </message>
-        <message>
-            <source>语言设置将在重新启动后生效</source>
-            <translation>Language changes take effect after restarting</translation>
-        </message>
-        <message>
-            <source>重新启动</source>
-            <translation>Restart</translation>
-        </message>
-        <message>
-            <source>请关闭程序后重新打开，以应用语言设置</source>
-            <translation>Close and reopen the application to apply the language setting</translation>
-        </message>
     </context>
     <context>
         <name>LayerMenu</name>

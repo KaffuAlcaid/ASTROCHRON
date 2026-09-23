@@ -8,6 +8,7 @@ Dialog {
     required property AppState clock
     property var cities: []
     property bool initialSetup: false
+    property bool nameEdited: false
     signal locationApplied
     title: qsTr("观测地点")
     modal: true
@@ -16,6 +17,7 @@ Dialog {
     width: 490
     height: Math.min(720, Overlay.overlay ? Overlay.overlay.height - 32 : 720)
     function populate() {
+        nameEdited = false;
         nameField.text = clock.observerName;
         latitudeField.text = clock.observerLatitude.toFixed(6);
         longitudeField.text = clock.observerLongitude.toFixed(6);
@@ -44,6 +46,10 @@ Dialog {
     }
     Connections {
         target: dialog.clock
+        function onLocalizedChanged() {
+            dialog.cities = dialog.clock.findCities(citySearch.text);
+            if (!dialog.nameEdited) nameField.text = dialog.clock.observerName;
+        }
         function onElevationChanged() {
             if (dialog.opened && !dialog.clock.elevationBusy && dialog.clock.hasObserverHeight && !heightField.activeFocus)
                 heightField.text = dialog.clock.observerHeight.toFixed(1);
@@ -84,6 +90,7 @@ Dialog {
                 }
                 TextField {
                     id: nameField
+                    onTextEdited: dialog.nameEdited = true
                     Layout.fillWidth: true
                     selectByMouse: true
                 }
@@ -223,6 +230,7 @@ Dialog {
             Layout.fillWidth: true
             Layout.fillHeight: true
             TextField {
+                id: citySearch
                 Layout.fillWidth: true
                 placeholderText: qsTr("搜索城市")
                 selectByMouse: true

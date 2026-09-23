@@ -11,6 +11,8 @@ Canvas {
     property color textColor: "#263135"
     property color pastColor: "#b77c44"
     property color futureColor: "#087e6f"
+    property var directions: [qsTr("北"), qsTr("南"), qsTr("西"), qsTr("东")]
+    onDirectionsChanged: requestPaint()
     onTrajectoryChanged: requestPaint()
     onObservationChanged: requestPaint()
     onSelectedTimeChanged: requestPaint()
@@ -45,10 +47,10 @@ Canvas {
         ctx.fillStyle = textColor;
         ctx.font = "11px 'Microsoft YaHei UI'";
         ctx.textAlign = "center";
-        ctx.fillText(qsTr("北"), cx, cy - radius - 8);
-        ctx.fillText(qsTr("南"), cx, cy + radius + 17);
-        ctx.fillText(qsTr("西"), cx - radius - 14, cy + 4);
-        ctx.fillText(qsTr("东"), cx + radius + 14, cy + 4);
+        ctx.fillText(directions[0], cx, cy - radius - 8);
+        ctx.fillText(directions[1], cx, cy + radius + 17);
+        ctx.fillText(directions[2], cx - radius - 14, cy + 4);
+        ctx.fillText(directions[3], cx + radius + 14, cy + 4);
         ctx.textAlign = "left";
         ctx.fillText("30°", cx + 4, cy - radius * 2 / 3 + 12);
         ctx.fillText("60°", cx + 4, cy - radius / 3 + 12);

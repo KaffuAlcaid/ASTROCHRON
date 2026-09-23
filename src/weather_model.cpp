@@ -14,7 +14,7 @@ constexpr const char *variables[] = {"cloud_cover", "cloud_cover_low", "cloud_co
 WeatherModel::WeatherModel(QObject *parent) : QObject(parent)
 {
     m_enabled = m_settings.value("weather/enabled", true).toBool();
-    m_status = m_enabled ? tr("天气待获取") : tr("天气查询已关闭");
+    m_status = [this] { return m_enabled ? tr("天气待获取") : tr("天气查询已关闭"); };
     m_refreshTimer.setInterval(3600000);
     connect(&m_refreshTimer, &QTimer::timeout, this, &WeatherModel::refresh);
     m_locationTimer.setSingleShot(true);
@@ -28,6 +28,7 @@ void WeatherModel::setClock(AppState *clock)
     if (m_clock) disconnect(m_clock, nullptr, this, nullptr);
     m_clock = clock;
     if (clock) {
+        connect(clock, &AppState::localizedChanged, this, &WeatherModel::statusChanged);
         connect(clock, &AppState::observerChanged, this, &WeatherModel::updateLocation);
         connect(clock, &AppState::timeChanged, this, [this] {
             const auto hour = static_cast<qint64>(std::floor(m_clock->unixTime() / 3600.0));
@@ -47,7 +48,7 @@ void WeatherModel::updateLocation()
         ++m_request; m_busy = false;
         m_latitude = m_clock->observerLatitude(); m_longitude = m_clock->observerLongitude();
         m_hourly = {}; m_fetchedAt = {};
-        m_status = m_enabled ? tr("天气待获取") : tr("天气查询已关闭");
+        m_status = [this] { return m_enabled ? tr("天气待获取") : tr("天气查询已关闭"); };
         if (m_enabled) m_locationTimer.start();
     }
     emit statusChanged();
@@ -64,7 +65,7 @@ void WeatherModel::setEnabled(bool enabled)
         ++m_request; m_busy = false;
         m_refreshTimer.stop(); m_locationTimer.stop();
         m_hourly = {}; m_fetchedAt = {};
-        m_status = tr("天气查询已关闭");
+        m_status = [] { return tr("天气查询已关闭"); };
     }
     emit statusChanged(); emit forecastChanged();
 }
@@ -108,7 +109,7 @@ void WeatherModel::refresh()
     url.setQuery(parameters);
     QNetworkRequest networkRequest(url); networkRequest.setTransferTimeout(25000);
     auto *reply = m_network.get(networkRequest);
-    m_busy = true; m_status = tr("正在获取天气预报"); emit statusChanged();
+    m_busy = true; m_status = [] { return tr("正在获取天气预报"); }; emit statusChanged();
     connect(reply, &QNetworkReply::finished, this, [this, reply, request] {
         reply->deleteLater();
         if (request != m_request) return;
@@ -123,9 +124,9 @@ void WeatherModel::refresh()
         }
         if (reply->error() == QNetworkReply::NoError && valid) {
             m_hourly = hourly; m_fetchedAt = QDateTime::currentDateTimeUtc();
-            m_status = tr("逐小时预报");
+            m_status = [] { return tr("逐小时预报"); };
             emit forecastChanged();
-        } else m_status = reply->error() == QNetworkReply::NoError ? tr("天气预报暂缺") : tr("天气获取失败：") + reply->errorString();
+        } else m_status = [valid = reply->error() == QNetworkReply::NoError, error = reply->errorString()] { return valid ? tr("天气预报暂缺") : tr("天气获取失败：") + error; };
         emit statusChanged();
     });
 }

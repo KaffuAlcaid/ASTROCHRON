@@ -7,6 +7,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QtQml/qqmlregistration.h>
+#include <functional>
 
 class WeatherModel : public QObject {
     Q_OBJECT
@@ -24,7 +25,7 @@ public:
     bool enabled() const { return m_enabled; }
     void setEnabled(bool enabled);
     bool busy() const { return m_busy; }
-    QString status() const { return m_status; }
+    QString status() const { return m_status ? m_status() : QString(); }
     QString fetchedAt() const;
     QVariantMap forecast() const;
     Q_INVOKABLE void refresh();
@@ -41,7 +42,7 @@ private:
     QTimer m_locationTimer;
     QJsonObject m_hourly;
     QDateTime m_fetchedAt;
-    QString m_status;
+    std::function<QString()> m_status;
     double m_latitude = 1000;
     double m_longitude = 1000;
     qint64 m_hour = -1;

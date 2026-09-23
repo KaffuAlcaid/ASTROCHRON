@@ -20,7 +20,7 @@ class AppState : public QObject {
     Q_PROPERTY(int minuteOffset READ minuteOffset WRITE setMinuteOffset NOTIFY timeChanged)
     Q_PROPERTY(bool live READ live NOTIFY timeChanged)
     Q_PROPERTY(QVector3D sunDirection READ sunDirection NOTIFY timeChanged)
-    Q_PROPERTY(QString observerName READ observerName NOTIFY observerChanged)
+    Q_PROPERTY(QString observerName READ observerName NOTIFY localizedChanged)
     Q_PROPERTY(bool hasObserver READ hasObserver NOTIFY observerChanged)
     Q_PROPERTY(double observerLatitude READ observerLatitude NOTIFY observerChanged)
     Q_PROPERTY(double observerLongitude READ observerLongitude NOTIFY observerChanged)
@@ -35,14 +35,13 @@ class AppState : public QObject {
     Q_PROPERTY(double referenceTime READ referenceTime NOTIFY timeChanged)
     Q_PROPERTY(double nowTime READ nowTime NOTIFY nowChanged)
     Q_PROPERTY(double ellipsoidHeight READ ellipsoidHeight NOTIFY observerChanged)
-    Q_PROPERTY(QString elevationStatus READ elevationStatus NOTIFY elevationChanged)
+    Q_PROPERTY(QString elevationStatus READ elevationStatus NOTIFY localizedChanged)
     Q_PROPERTY(bool elevationBusy READ elevationBusy NOTIFY elevationChanged)
     Q_PROPERTY(bool automaticElevation READ automaticElevation WRITE setAutomaticElevation NOTIFY elevationChanged)
     Q_PROPERTY(double minimumElevation READ minimumElevation WRITE setMinimumElevation NOTIFY observerChanged)
-    Q_PROPERTY(QVariantList savedObservers READ savedObservers NOTIFY observerChanged)
+    Q_PROPERTY(QVariantList savedObservers READ savedObservers NOTIFY localizedChanged)
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
-    Q_PROPERTY(QString startupLanguage READ startupLanguage CONSTANT)
-    Q_PROPERTY(bool chinese READ chinese CONSTANT)
+    Q_PROPERTY(bool chinese READ chinese NOTIFY localizedChanged)
 
 public:
     explicit AppState(QObject *parent = nullptr);
@@ -88,10 +87,9 @@ public:
     Q_INVOKABLE bool setObserver(const QString &name, double latitude, double longitude, double height, const QString &timeZone);
     Q_INVOKABLE QVariantList findCities(const QString &query) const;
     QString language() const { return m_language; }
-    QString startupLanguage() const { return m_startupLanguage; }
     bool chinese() const;
     void setLanguage(const QString &language);
-    Q_INVOKABLE bool restart();
+    void retranslate();
 
 signals:
     void timeChanged();
@@ -101,6 +99,7 @@ signals:
     void updateFrequencyChanged();
     void nowChanged();
     void languageChanged();
+    void localizedChanged();
 
 private:
     void updateSun();
@@ -130,5 +129,4 @@ private:
     double m_minimumElevation = 10;
     quint64 m_elevationRequest = 0;
     QString m_language;
-    QString m_startupLanguage;
 };

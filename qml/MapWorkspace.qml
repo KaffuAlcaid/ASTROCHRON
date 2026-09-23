@@ -21,6 +21,10 @@ ColumnLayout {
         worldMap.centerOn(clock.observerLongitude, clock.observerLatitude);
     }
     Connections {
+        target: workspace.clock
+        function onLocalizedChanged() { worldMap.updateLabels(); }
+    }
+    Connections {
         target: workspace.satellites
         function onFrameChanged() {
             if (workspace.following && workspace.observation.longitude !== undefined)

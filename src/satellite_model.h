@@ -8,6 +8,7 @@
 #include <QThreadPool>
 #include <QUrl>
 #include <QSet>
+#include <functional>
 
 class CatalogModel;
 
@@ -17,12 +18,12 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(AppState *clock READ clock WRITE setClock NOTIFY clockChanged)
     Q_PROPERTY(QString search READ search WRITE setSearch NOTIFY watchlistChanged)
     Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY catalogChanged)
-    Q_PROPERTY(QVariantMap groupInfo READ groupInfo NOTIFY catalogChanged)
-    Q_PROPERTY(QVariantList groups READ groups CONSTANT)
+    Q_PROPERTY(QVariantMap groupInfo READ groupInfo NOTIFY localizedChanged)
+    Q_PROPERTY(QVariantList groups READ groups NOTIFY localizedChanged)
     Q_PROPERTY(QString selectedId READ selectedId WRITE select NOTIFY selectionChanged)
     Q_PROPERTY(QVariantMap observation READ observation NOTIFY frameChanged)
-    Q_PROPERTY(QVariantList orbitFields READ orbitFields NOTIFY selectionChanged)
-    Q_PROPERTY(QVariantList relatedObjects READ relatedObjects NOTIFY selectionChanged)
+    Q_PROPERTY(QVariantList orbitFields READ orbitFields NOTIFY detailsChanged)
+    Q_PROPERTY(QVariantList relatedObjects READ relatedObjects NOTIFY detailsChanged)
     Q_PROPERTY(QVariantList markers READ markers NOTIFY frameChanged)
     Q_PROPERTY(QVariantList gnssMarkers READ gnssMarkers NOTIFY gnssChanged)
     Q_PROPERTY(QVariantList trajectory READ trajectory NOTIFY trajectoryChanged)
@@ -66,19 +67,19 @@ public:
     QVariantMap groupInfo() const;
     QString selectedId() const { return QString::number(m_selected); }
     Q_INVOKABLE void select(const QString &id);
-    QVariantMap observation() const { return m_observation; }
+    QVariantMap observation() const;
     QVariantList orbitFields() const;
     QVariantList relatedObjects() const;
     QVariantList markers() const { return m_markers; }
     QVariantList gnssMarkers() const { return m_gnssMarkers; }
     QVariantList trajectory() const { return m_trajectory; }
-    QVariantList passes() const { return m_passes; }
-    QVariantList shadowEvents() const { return m_shadowEvents; }
+    QVariantList passes() const;
+    QVariantList shadowEvents() const;
     QVariantList snapshots() const;
     qint64 snapshotId() const;
     QString sourceText() const;
     QString elementEpoch() const;
-    QString status() const { return m_status; }
+    QString status() const { return m_status ? m_status() : QString(); }
     bool downloading() const { return m_downloading; }
     bool calculating() const { return m_busy; }
     int total() const { return static_cast<int>(m_watchlist.size()); }
@@ -99,7 +100,7 @@ public:
     double receiveFrequency() const { return m_frequency; }
     void setReceiveFrequency(double value);
     QVariantMap photometry() const;
-    QString photometryStatus() const { return m_photometryStatus; }
+    QString photometryStatus() const { return m_photometryStatus ? m_photometryStatus() : QString(); }
     Q_INVOKABLE bool setPhotometry(double magnitude, int phase, const QString &source, const QString &sourceDate);
     Q_INVOKABLE bool clearPhotometry();
     Q_INVOKABLE bool importMagnitudes(const QUrl &url, const QString &sourceDate);
@@ -122,6 +123,8 @@ signals:
     void sourceChanged();
     void gnssChanged();
     void photometryChanged();
+    void localizedChanged();
+    void detailsChanged();
 
 private:
     friend class CatalogModel;
@@ -138,7 +141,7 @@ private:
     void install(QVector<Orbit::Satellite> satellites, Source source);
     void refreshPreview();
     bool store(const QByteArray &payload, const QString &source, const QString &group);
-    void setStatus(const QString &status);
+    void setStatus(std::function<QString()> status);
     const Orbit::Satellite *selected() const;
     AppState *m_clock = nullptr;
     QNetworkAccessManager m_network;
@@ -147,7 +150,7 @@ private:
     QSettings m_settings;
     QHash<qint64, Photometry> m_photometry;
     QHash<qint64, Photometry> m_defaultPhotometry;
-    QString m_photometryStatus;
+    std::function<QString()> m_photometryStatus;
     QVector<Orbit::Satellite> m_satellites;
     QHash<qint64, int> m_index;
     QHash<qint64, Source> m_sources;
@@ -163,7 +166,8 @@ private:
     QHash<qint64, QVector<int>> m_members;
     QVector<int> m_rows;
     QHash<qint64, double> m_elevations;
-    QString m_search, m_group = QStringLiteral("catalog"), m_source, m_status;
+    QString m_search, m_group = QStringLiteral("catalog"), m_source;
+    std::function<QString()> m_status;
     qint64 m_selected = 0, m_snapshot = 0;
     quint64 m_revision = 0;
     double m_trackReference = 0;

@@ -19,11 +19,12 @@ QString CatalogModel::constellation(const Orbit::Satellite &satellite)
 
 QString CatalogModel::constellationName(const QString &key)
 {
-    static const QHash<QString, QString> names{{"stations", tr("空间站")}, {"starlink", "Starlink"},
-        {"gps-ops", "GPS"}, {"galileo", tr("伽利略")}, {"glo-ops", "GLONASS"}, {"beidou", tr("北斗")},
-        {"oneweb", "OneWeb"}, {"qianfan", tr("千帆")}, {"hulianwang", tr("互联网低轨")},
-        {"kuiper", tr("柯伊伯")}, {"iridium-NEXT", tr("铱星")}, {"other", tr("其他目标")}};
-    return names.value(key, key);
+    static const QHash<QString, const char *> names{{"stations", QT_TR_NOOP("空间站")}, {"starlink", "Starlink"},
+        {"gps-ops", "GPS"}, {"galileo", QT_TR_NOOP("伽利略")}, {"glo-ops", "GLONASS"}, {"beidou", QT_TR_NOOP("北斗")},
+        {"oneweb", "OneWeb"}, {"qianfan", QT_TR_NOOP("千帆")}, {"hulianwang", QT_TR_NOOP("互联网低轨")},
+        {"kuiper", QT_TR_NOOP("柯伊伯")}, {"iridium-NEXT", QT_TR_NOOP("铱星")}, {"other", QT_TR_NOOP("其他目标")}};
+    const auto name = names.value(key, nullptr);
+    return name ? tr(name) : key;
 }
 
 int CatalogModel::rowCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : static_cast<int>(m_rows.size()); }
@@ -61,6 +62,10 @@ void CatalogModel::setSource(SatelliteModel *source)
     if (m_source) disconnect(m_source, nullptr, this, nullptr);
     m_source = source;
     if (source) {
+        connect(source, &SatelliteModel::localizedChanged, this, [this] {
+            if (!m_rows.isEmpty()) emit dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1));
+            emit groupsChanged();
+        });
         connect(source, &SatelliteModel::catalogChanged, this, &CatalogModel::rebuild);
         connect(source, &SatelliteModel::watchlistChanged, this, [this] {
             if (!m_rows.isEmpty()) emit dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1), {WatchedRole});
