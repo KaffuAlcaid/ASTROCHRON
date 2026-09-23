@@ -29,6 +29,19 @@ ApplicationWindow {
     readonly property bool modalActive: popupFocused || observerDialog.visible || settingsDialog.visible || catalogDialog.visible
         || photometryDialog.visible || planDialog.visible || importDialog.visible || exportDialog.visible || detailDrawer.opened
     readonly property string commandKey: Qt.platform.os === "osx" ? "Meta+" : "Ctrl+"
+    readonly property bool spaceHandledByControl: {
+        const item = window.activeFocusItem;
+        return item && (item instanceof TextInput || item instanceof TextEdit
+            || item instanceof ComboBox || item instanceof SpinBox
+            || (item instanceof AbstractButton && item.checkable));
+    }
+    Shortcut {
+        sequence: "Space"
+        context: Qt.WindowShortcut
+        autoRepeat: false
+        enabled: !window.modalActive && !window.spaceHandledByControl
+        onActivated: expandMapAction.trigger()
+    }
     Action {
         id: searchAction
         text: qsTr("搜索观测清单")
@@ -293,7 +306,6 @@ ApplicationWindow {
                 passInfo: window.skyPass
                 expanded: window.expanded
                 expandAction: expandMapAction
-                nowAction: returnNowAction
                 onDetailsRequested: window.showDetails()
                 onTargetActivated: if (window.compact)
                     detailDrawer.open()

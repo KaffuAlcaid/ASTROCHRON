@@ -59,5 +59,6 @@ RowLayout {
     }
     IconButton {
         action: toolbar.expandAction
+        shortcutHint: "Space"
     }
 }

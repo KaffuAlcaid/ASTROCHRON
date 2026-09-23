@@ -10,13 +10,6 @@ Rectangle {
     required property Action nowAction
     implicitHeight: 94
     color: Theme.surface
-    Keys.priority: Keys.AfterItem
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Space && event.modifiers === Qt.NoModifier) {
-            timeline.nowAction.trigger();
-            event.accepted = true;
-        }
-    }
     function fraction(time) {
         return (time - clock.referenceTime + 43200) / 86400;
     }
@@ -173,7 +166,7 @@ Rectangle {
             action: timeline.nowAction
             icon.color: Theme.text
             ToolTip.visible: hovered || visualFocus
-            ToolTip.text: text + " (Space)"
+            ToolTip.text: text
         }
     }
 }

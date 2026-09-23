@@ -8,14 +8,15 @@ ColumnLayout {
     id: workspace
     required property AppState clock
     required property SatelliteModel satellites
-    required property Action nowAction
     required property Action expandAction
     property var passInfo: ({})
     property bool expanded: false
     property alias following: mapPreferences.following
     property alias zoom: worldMap.zoom
     property bool picking: false
+    property var previousView: null
     property var observation: satellites.observation
+    onExpandedChanged: if (expanded) mapViewport.forceActiveFocus(Qt.ShortcutFocusReason)
     signal detailsRequested
     signal targetActivated
     spacing: 0
@@ -29,17 +30,31 @@ ColumnLayout {
         const point = orbitLayer.selectedCoordinate(clock.unixTime);
         if (isFinite(point.x) && isFinite(point.y)) worldMap.centerOn(point.x, point.y);
     }
-    onFollowingChanged: if (following) Qt.callLater(followTarget)
+    onFollowingChanged: {
+        if (following) Qt.callLater(followTarget);
+        else previousView = null;
+    }
     Action {
         id: mapFollowAction
-        text: qsTr("跟随卫星")
+        text: workspace.previousView ? qsTr("恢复原视图") : qsTr("跟随卫星")
         icon.source: "qrc:/icons/crosshair.svg"
         enabled: workspace.satellites.selectedId !== "0" && workspace.clock.hasObserver
         onTriggered: {
             workspace.picking = false;
-            workspace.following = true;
-            worldMap.zoom = 9;
-            workspace.followTarget();
+            if (workspace.previousView) {
+                const view = workspace.previousView;
+                workspace.previousView = null;
+                workspace.following = false;
+                worldMap.zoom = view.zoom;
+                worldMap.centerOn(view.longitude, view.latitude);
+                workspace.following = view.following;
+            } else {
+                workspace.previousView = { longitude: worldMap.centerLongitude, latitude: worldMap.centerLatitude,
+                    zoom: worldMap.zoom, following: workspace.following };
+                workspace.following = true;
+                worldMap.zoom = 9;
+                workspace.followTarget();
+            }
         }
     }
     Action {
@@ -76,8 +91,9 @@ ColumnLayout {
         if (modifiers !== Qt.NoModifier) return;
         if (event.key === Qt.Key_Plus || event.key === Qt.Key_Equal) mapZoomInAction.trigger();
         else if (event.key === Qt.Key_Minus) mapZoomOutAction.trigger();
-        else if (event.key === Qt.Key_F) mapFollowAction.trigger();
-        else if (event.key === Qt.Key_Space) workspace.nowAction.trigger();
+        else if (event.key === Qt.Key_F) {
+            if (!event.isAutoRepeat) mapFollowAction.trigger();
+        }
         else return;
         event.accepted = true;
     }

@@ -411,6 +411,10 @@ Orbital plane </translation>
             <translation>Follow satellite</translation>
         </message>
         <message>
+            <source>恢复原视图</source>
+            <translation>Restore previous view</translation>
+        </message>
+        <message>
             <source>放大</source>
             <translation>Zoom in</translation>
         </message>
