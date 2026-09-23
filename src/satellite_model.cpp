@@ -638,7 +638,7 @@ void SatelliteModel::refresh()
         if (!store(payload, url.toString(), group)) return;
         m_retryAfter.remove(group);
         install(std::move(satellites), Source{group, url.toString(), m_snapshot});
-        setStatus([count, skipped] { return tr("目录已获取 %1 条根数").arg(count) + (skipped ? tr("，%1 条根数格式异常").arg(skipped) : QString()); });
+        setStatus([count, skipped, error] { return tr("目录已获取 %1 条根数").arg(count) + (skipped ? tr("，%1 条根数未载入：%2").arg(skipped).arg(error) : QString()); });
     });
 }
 
@@ -664,7 +664,7 @@ void SatelliteModel::importFile(const QUrl &url)
     if (satellites.isEmpty()) { setStatus([error] { return error.isEmpty() ? tr("文件内没有卫星根数") : error; }); return; }
     if (!store(payload, QFileInfo(file).fileName(), "local")) return;
     setGroup("local");
-    setStatus([skipped] { return tr("轨道文件已加入目录%1").arg(skipped ? tr("，%1 条根数格式异常").arg(skipped) : QString()); });
+    setStatus([skipped, error] { return tr("轨道文件已加入目录%1").arg(skipped ? tr("，%1 条根数未载入：%2").arg(skipped).arg(error) : QString()); });
 }
 
 void SatelliteModel::exportSelected(const QUrl &url)
@@ -851,7 +851,7 @@ void SatelliteModel::loadSnapshot(qint64 id)
     if (satellites.isEmpty()) { setStatus([error] { return error; }); return; }
     m_snapshot = id; m_source = query.value(1).toString();
     install(std::move(satellites), Source{query.value(2).toString(), m_source, id});
-    setStatus([] { return tr("本地轨道数据已载入"); });
+    setStatus([skipped, error] { return tr("本地轨道数据已载入") + (skipped ? tr("，%1 条根数未载入：%2").arg(skipped).arg(error) : QString()); });
     emit catalogChanged();
 }
 

@@ -990,6 +990,10 @@ Third-party licenses and attribution: THIRD_PARTY_NOTICES.md and the licenses fo
             <translation>Choose orbital elements using UTC and SGP4</translation>
         </message>
         <message>
+            <source>请选择采用 TEME 参考系的轨道根数</source>
+            <translation>Please select orbital elements in the TEME reference frame</translation>
+        </message>
+        <message>
             <source>轨道根数的历元、编号或数值范围无效</source>
             <translation>Invalid element epoch, identifier or numeric range</translation>
         </message>
@@ -1552,10 +1556,6 @@ Range at peak </translation>
             <translation>Downloaded %1 element sets</translation>
         </message>
         <message>
-            <source>，%1 条根数格式异常</source>
-            <translation>; %1 invalid element sets</translation>
-        </message>
-        <message>
             <source>正在整理数据库，请稍后保存资料</source>
             <translation>Database maintenance is in progress; save data afterwards</translation>
         </message>
@@ -1870,6 +1870,10 @@ Range at peak </translation>
         <message>
             <source>数据库整理失败：%1</source>
             <translation>Database maintenance failed: %1</translation>
+        </message>
+        <message>
+            <source>，%1 条根数未载入：%2</source>
+            <translation>, %1 element records skipped: %2</translation>
         </message>
         <message>
             <source>请填写有效的资料日期（YYYY-MM-DD）</source>

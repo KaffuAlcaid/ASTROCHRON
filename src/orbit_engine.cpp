@@ -3,10 +3,10 @@
 
 #include <QDateTime>
 #include <QCoreApplication>
+#include <QHash>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QRegularExpression>
-#include <QSet>
 #include <QTimeZone>
 #include <algorithm>
 #include <cmath>
@@ -164,6 +164,10 @@ std::optional<Satellite> fromOmm(const QJsonObject &object, QString &error)
         error = QCoreApplication::translate("Orbit", "请选择采用协调世界时和 SGP4 的轨道根数");
         return std::nullopt;
     }
+    if (!object.value("REF_FRAME").isUndefined() && object.value("REF_FRAME").toString() != "TEME") {
+        error = QCoreApplication::translate("Orbit", "请选择采用 TEME 参考系的轨道根数");
+        return std::nullopt;
+    }
     Satellite satellite;
     satellite.number = object.value("NORAD_CAT_ID").toInteger();
     satellite.name = object.value("OBJECT_NAME").toString(QString::number(satellite.number));
@@ -195,10 +199,16 @@ QVector<Satellite> parse(const QByteArray &data, QString &error, int &skipped)
 {
     QVector<Satellite> result;
     skipped = 0; error.clear();
-    QSet<qint64> numbers;
+    QHash<qint64, qsizetype> numbers;
     const auto accept = [&](std::optional<Satellite> satellite) {
         if (!satellite) { ++skipped; return; }
-        if (!numbers.contains(satellite->number)) { numbers.insert(satellite->number); result.append(std::move(*satellite)); }
+        const auto existing = numbers.constFind(satellite->number);
+        if (existing == numbers.cend()) {
+            numbers.insert(satellite->number, result.size());
+            result.append(std::move(*satellite));
+        } else if (satellite->epoch > result[*existing].epoch) {
+            result[*existing] = std::move(*satellite);
+        }
     };
     const auto trimmed = data.trimmed();
     if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
@@ -219,7 +229,6 @@ QVector<Satellite> parse(const QByteArray &data, QString &error, int &skipped)
         }
     }
     if (result.isEmpty() && error.isEmpty() && trimmed != "[]") error = QCoreApplication::translate("Orbit", "文件中没有可用的轨道根数");
-    if (!result.isEmpty()) error.clear();
     return result;
 }
 
@@ -330,6 +339,15 @@ Track track(const Satellite &satellite, double start, double end, const Observer
     for (double time = (std::floor(start / 30) + 1) * 30; time < end; time += 30) appendSample(time);
     if (end > start) appendSample(end);
     if (!result.samples.isEmpty()) result.passes = predictPasses(satellite, start, end, observer, result.samples);
+    // Keep short passes visible to drawing code even when they fall between grid samples.
+    for (const auto &pass : result.passes) {
+        result.samples.append(pass.rise);
+        result.samples.append(pass.peak);
+        result.samples.append(pass.set);
+    }
+    std::sort(result.samples.begin(), result.samples.end(), [](const State &a, const State &b) { return a.time < b.time; });
+    result.samples.erase(std::unique(result.samples.begin(), result.samples.end(),
+        [](const State &a, const State &b) { return a.time == b.time; }), result.samples.end());
     return result;
 }
 
@@ -339,14 +357,31 @@ QVector<Pass> predictPasses(const Satellite &satellite, double start, double end
     if (end <= start) return result;
     const auto geometry = observerGeometry(observer);
     const auto at = [&](double time) { return propagate(satellite, propagationContext(time, geometry)); };
-    QVector<State> calculated;
-    if (samples.isEmpty()) {
-        if (const auto point = at(start)) calculated.append(*point);
+    QVector<State> points = samples;
+    if (points.isEmpty()) {
+        if (const auto point = at(start)) points.append(*point);
         for (double time = (std::floor(start / 30) + 1) * 30; time < end; time += 30)
-            if (const auto point = at(time)) calculated.append(*point);
-        if (const auto point = at(end)) calculated.append(*point);
+            if (const auto point = at(time)) points.append(*point);
+        if (const auto point = at(end)) points.append(*point);
     }
-    const auto &points = samples.isEmpty() ? calculated : samples;
+    const auto maximum = [&](double left, double right, double resolution) {
+        while (right - left > resolution) {
+            const double a = left + (right - left) / 3, b = right - (right - left) / 3;
+            const auto first = at(a), second = at(b);
+            if (!first || !second) return std::optional<State>{};
+            if (first->elevation < second->elevation) left = a; else right = b;
+        }
+        return at((left + right) / 2);
+    };
+    // Below-threshold endpoints can straddle a complete pass; bracket its peak by elevation rate.
+    for (qsizetype i = points.size() - 1; i > 0; --i) {
+        const auto &a = points[i - 1], &b = points[i];
+        if (b.time - a.time <= 31 && a.elevation < observer.minimumElevation && b.elevation < observer.minimumElevation
+            && a.elevationRate > 0 && b.elevationRate < 0) {
+            const auto peak = maximum(a.time, b.time, 0.01);
+            if (peak && peak->elevation >= observer.minimumElevation) points.insert(i, *peak);
+        }
+    }
     const auto crossing = [&](double left, double right, bool rising) {
         while (right - left > 0.5) {
             const double middle = (left + right) / 2;
@@ -374,16 +409,9 @@ QVector<Pass> predictPasses(const Satellite &satellite, double start, double end
             auto highest = *rise;
             for (const auto &point : points)
                 if (point.time >= rise->time && point.time <= set->time && point.elevation > highest.elevation) highest = point;
-            double left = std::max(rise->time, highest.time - 30), right = std::min(set->time, highest.time + 30);
-            while (right - left > 0.5) {
-                const double a = left + (right - left) / 3, b = right - (right - left) / 3;
-                const auto first = at(a), second = at(b);
-                if (!first || !second) break;
-                if (first->elevation < second->elevation) left = a; else right = b;
-            }
-            const auto peak = at((left + right) / 2);
+            const auto peak = maximum(std::max(rise->time, highest.time - 30), std::min(set->time, highest.time + 30), 0.5);
             if (peak) {
-                Pass pass{*rise, *peak, *set, clipped, endsAfter, {}};
+                Pass pass{*rise, peak->elevation > highest.elevation ? *peak : highest, *set, clipped, endsAfter, {}};
                 std::optional<double> visibleStart;
                 for (double time = rise->time; time <= set->time; time += 5) {
                     const auto point = at(time);
