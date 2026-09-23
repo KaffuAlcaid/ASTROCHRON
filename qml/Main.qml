@@ -18,6 +18,84 @@ ApplicationWindow {
     color: Theme.background
     property bool expanded: false
     readonly property bool compact: width < 1240
+    readonly property bool popupFocused: {
+        let item = window.activeFocusItem;
+        while (item) {
+            if (item === Overlay.overlay) return true;
+            item = item.parent;
+        }
+        return false;
+    }
+    readonly property bool modalActive: popupFocused || observerDialog.visible || settingsDialog.visible || catalogDialog.visible
+        || photometryDialog.visible || planDialog.visible || importDialog.visible || exportDialog.visible || detailDrawer.opened
+    readonly property string commandKey: Qt.platform.os === "osx" ? "Meta+" : "Ctrl+"
+    Action {
+        id: searchAction
+        text: qsTr("搜索观测清单")
+        shortcut: StandardKey.Find
+        enabled: !window.modalActive
+        onTriggered: sidebar.focusSearch()
+    }
+    Action {
+        id: importAction
+        text: qsTr("导入轨道文件")
+        shortcut: StandardKey.Open
+        enabled: !satelliteModel.storageBusy && (!window.modalActive || (catalogDialog.visible && !importDialog.visible))
+        onTriggered: importDialog.open()
+    }
+    Action {
+        id: planAction
+        text: qsTr("导出观测计划")
+        icon.source: "qrc:/icons/download.svg"
+        shortcut: window.commandKey + "E"
+        enabled: !window.modalActive && appState.hasObserver && satelliteModel.selectedId !== "0"
+        onTriggered: planDialog.openPlan()
+    }
+    Action {
+        id: settingsAction
+        text: qsTr("设置")
+        icon.source: "qrc:/icons/settings-2.svg"
+        shortcut: window.commandKey + ","
+        enabled: !window.modalActive
+        onTriggered: settingsDialog.open()
+    }
+    Action {
+        id: catalogAction
+        text: qsTr("卫星目录")
+        icon.source: "qrc:/icons/folder-open.svg"
+        enabled: !window.modalActive
+        onTriggered: catalogDialog.openAll()
+    }
+    Action {
+        id: observerAction
+        text: qsTr("更换地点")
+        icon.source: "qrc:/icons/map-pin.svg"
+        enabled: !window.modalActive
+        onTriggered: observerDialog.openCities()
+    }
+    Action {
+        id: returnNowAction
+        text: qsTr("回到现在")
+        icon.source: "qrc:/icons/rotate-ccw.svg"
+        enabled: !window.modalActive && !appState.live
+        onTriggered: appState.resumeLive()
+    }
+    Action {
+        id: expandMapAction
+        text: window.expanded ? qsTr("收起地图") : qsTr("展开地图")
+        icon.source: window.expanded ? "qrc:/icons/minimize-2.svg" : "qrc:/icons/maximize-2.svg"
+        enabled: !window.modalActive
+        onTriggered: window.expanded = !window.expanded
+    }
+    Action {
+        text: qsTr("退出当前视图")
+        shortcut: "Escape"
+        enabled: !window.modalActive && (mapWorkspace.picking || window.expanded)
+        onTriggered: {
+            if (mapWorkspace.picking) mapWorkspace.picking = false;
+            else window.expanded = false;
+        }
+    }
     readonly property var passList: satelliteModel.passes
     property var nextPass: {
         const passes = window.passList;
@@ -113,9 +191,8 @@ ApplicationWindow {
                     font.pixelSize: 11
                 }
                 IconButton {
-                    icon.source: "qrc:/icons/settings-2.svg"
-                    tip: qsTr("设置")
-                    onClicked: settingsDialog.open()
+                    action: settingsAction
+                    shortcutHint: window.commandKey + ","
                 }
                 IconButton {
                     icon.source: "qrc:/icons/moon.svg"
@@ -141,12 +218,10 @@ ApplicationWindow {
                     elide: Text.ElideRight
                 }
                 Button {
-                    text: qsTr("更换地点")
-                    icon.source: "qrc:/icons/map-pin.svg"
+                    action: observerAction
                     icon.color: Theme.text
                     implicitHeight: 26
                     font.pixelSize: 12
-                    onClicked: observerDialog.openCities()
                 }
                 Label {
                     visible: appState.hasObserver && window.width >= 1040
@@ -197,10 +272,10 @@ ApplicationWindow {
             id: sidebar
             satellites: satelliteModel
             catalog: catalogModel
+            openCatalogAction: catalogAction
             SplitView.minimumWidth: 200
             SplitView.maximumWidth: 320
             SplitView.preferredWidth: preferences.sidebarWidth
-            onCatalogRequested: catalogDialog.openAll()
             onGroupRequested: key => catalogDialog.openGroup(key)
             onTargetActivated: if (window.compact)
                 detailDrawer.open()
@@ -217,7 +292,8 @@ ApplicationWindow {
                 satellites: satelliteModel
                 passInfo: window.skyPass
                 expanded: window.expanded
-                onExpandRequested: window.expanded = !window.expanded
+                expandAction: expandMapAction
+                nowAction: returnNowAction
                 onDetailsRequested: window.showDetails()
                 onTargetActivated: if (window.compact)
                     detailDrawer.open()
@@ -231,7 +307,7 @@ ApplicationWindow {
                 clock: appState
                 satellites: satelliteModel
                 nextPass: window.nextPass
-                onPlanRequested: planDialog.openPlan()
+                exportAction: planAction
             }
         }
         Item {
@@ -267,6 +343,7 @@ ApplicationWindow {
     footer: Timeline {
         clock: appState
         satellites: satelliteModel
+        nowAction: returnNowAction
     }
 
     ObserverDialog {
@@ -288,7 +365,7 @@ ApplicationWindow {
         id: catalogDialog
         satellites: satelliteModel
         catalog: catalogModel
-        onImportRequested: importDialog.open()
+        onImportRequested: importAction.trigger()
         onInspectionRequested: window.showDetails()
     }
     FileDialog {
@@ -312,11 +389,6 @@ ApplicationWindow {
         nameFilters: [qsTr("轨道根数 (*.json)")]
         defaultSuffix: "json"
         onAccepted: satelliteModel.exportSelected(selectedFile)
-    }
-    Shortcut {
-        sequence: "Escape"
-        enabled: window.expanded
-        onActivated: window.expanded = false
     }
     Component.onCompleted: if (!appState.hasObserver)
         Qt.callLater(function() { observerDialog.openCities(); })

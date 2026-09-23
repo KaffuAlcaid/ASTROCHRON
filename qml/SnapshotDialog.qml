@@ -13,7 +13,11 @@ Dialog {
     anchors.centerIn: Overlay.overlay
     width: Math.min(640, Overlay.overlay.width - 32)
     height: Math.min(560, Overlay.overlay.height - 32)
-    onOpened: satellites.refreshStorage()
+    onOpened: {
+        satellites.refreshStorage();
+        const button = standardButton(Dialog.Close);
+        if (button) button.text = Qt.binding(function() { return qsTr("关闭"); });
+    }
     contentItem: ColumnLayout {
         spacing: 12
         Label {

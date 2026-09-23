@@ -113,7 +113,9 @@ bool SatelliteModel::initializeDatabase()
         if (query.exec(sql)) return true;
         error = query.lastError().text(); return false;
     };
-    if (!exec("PRAGMA user_version") || !query.next()) return false;
+    if (!exec("PRAGMA user_version") || !query.next()) {
+        setStatus([error] { return tr("数据库初始化失败：%1").arg(error); }); return false;
+    }
     int version = query.value(0).toInt();
     query.finish();
     if (version > 2) {
@@ -187,6 +189,7 @@ QVariantList SatelliteModel::cleanupCandidates() const
 
 bool SatelliteModel::snapshotPinned() const
 {
+    if (!m_database.isOpen()) return false;
     QSqlQuery query(m_database);
     query.prepare("SELECT pinned FROM snapshots WHERE id=?"); query.addBindValue(snapshotId());
     return query.exec() && query.next() && query.value(0).toBool();
@@ -808,7 +811,8 @@ bool SatelliteModel::exportPlan(const QUrl &url, const QString &format)
             icsLine("BEGIN:VEVENT");
             icsLine("UID:" + QUuid::createUuidV5(QUuid("{cb64f4af-cd0e-4d96-806d-1d73cf11da90}"), identity.toUtf8()).toString(QUuid::WithoutBraces) + "@astrochron");
             icsLine("DTSTAMP:" + utc(QDateTime::currentSecsSinceEpoch()));
-            icsLine("DTSTART:" + utc(pass.rise.time)); icsLine("DTEND:" + utc(pass.set.time));
+            icsLine("DTSTART:" + utc(pass.rise.time));
+            icsLine("DTEND:" + utc(std::max(qRound64(pass.set.time), qRound64(pass.rise.time) + 1)));
             icsLine("SUMMARY:" + icsText(title)); icsLine("LOCATION:" + icsText(location));
             icsLine("DESCRIPTION:" + icsText(description.join('\n'))); icsLine("END:VEVENT");
         }

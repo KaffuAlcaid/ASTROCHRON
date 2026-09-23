@@ -6,16 +6,16 @@ import Astrochron
 RowLayout {
     id: toolbar
     required property WorldMap map
+    required property Action followAction
+    required property Action zoomInAction
+    required property Action zoomOutAction
+    required property Action globalViewAction
+    required property Action pickAction
+    required property Action expandAction
     property string title
     property bool hasTarget: false
     property bool expanded: false
-    property bool following: false
-    property bool picking: false
-    signal followRequested
-    signal pickingRequested
-    signal expandRequested
     signal detailsRequested
-    signal navigationStarted
     spacing: 2
     Label {
         text: toolbar.title
@@ -31,20 +31,12 @@ RowLayout {
         onClicked: toolbar.detailsRequested()
     }
     IconButton {
-        icon.source: "qrc:/icons/crosshair.svg"
-        tip: qsTr("跟随卫星")
-        checkable: true
-        checked: toolbar.following
-        enabled: toolbar.hasTarget
-        onClicked: toolbar.followRequested()
+        action: toolbar.followAction
+        shortcutHint: "F"
     }
     IconButton {
-        icon.source: "qrc:/icons/minus.svg"
-        tip: qsTr("缩小")
-        enabled: toolbar.map.zoom > 1
-        onClicked: {
-            toolbar.map.zoomAt(1 / 1.5, toolbar.map.width / 2, toolbar.map.height / 2);
-        }
+        action: toolbar.zoomOutAction
+        shortcutHint: "-"
     }
     Label {
         text: toolbar.map.zoom.toFixed(1) + "×"
@@ -54,31 +46,16 @@ RowLayout {
         horizontalAlignment: Text.AlignHCenter
     }
     IconButton {
-        icon.source: "qrc:/icons/plus.svg"
-        tip: qsTr("放大")
-        enabled: toolbar.map.zoom < 12
-        onClicked: {
-            toolbar.map.zoomAt(1.5, toolbar.map.width / 2, toolbar.map.height / 2);
-        }
+        action: toolbar.zoomInAction
+        shortcutHint: "+"
     }
     IconButton {
-        icon.source: "qrc:/icons/globe.svg"
-        tip: qsTr("全球视图")
-        onClicked: {
-            toolbar.navigationStarted();
-            toolbar.map.resetView();
-        }
+        action: toolbar.globalViewAction
     }
     IconButton {
-        icon.source: "qrc:/icons/map-pin.svg"
-        tip: qsTr("地图选点")
-        checkable: true
-        checked: toolbar.picking
-        onClicked: toolbar.pickingRequested()
+        action: toolbar.pickAction
     }
     IconButton {
-        icon.source: toolbar.expanded ? "qrc:/icons/minimize-2.svg" : "qrc:/icons/maximize-2.svg"
-        tip: toolbar.expanded ? qsTr("收起地图") : qsTr("展开地图")
-        onClicked: toolbar.expandRequested()
+        action: toolbar.expandAction
     }
 }

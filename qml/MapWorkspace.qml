@@ -8,13 +8,14 @@ ColumnLayout {
     id: workspace
     required property AppState clock
     required property SatelliteModel satellites
+    required property Action nowAction
+    required property Action expandAction
     property var passInfo: ({})
     property bool expanded: false
     property alias following: mapPreferences.following
     property alias zoom: worldMap.zoom
     property bool picking: false
     property var observation: satellites.observation
-    signal expandRequested
     signal detailsRequested
     signal targetActivated
     spacing: 0
@@ -29,6 +30,54 @@ ColumnLayout {
         if (isFinite(point.x) && isFinite(point.y)) worldMap.centerOn(point.x, point.y);
     }
     onFollowingChanged: if (following) Qt.callLater(followTarget)
+    Action {
+        id: mapFollowAction
+        text: qsTr("跟随卫星")
+        icon.source: "qrc:/icons/crosshair.svg"
+        checkable: true
+        checked: workspace.following
+        enabled: workspace.satellites.selectedId !== "0" && workspace.clock.hasObserver
+        onTriggered: workspace.following = checked
+    }
+    Action {
+        id: mapZoomInAction
+        text: qsTr("放大")
+        icon.source: "qrc:/icons/plus.svg"
+        enabled: worldMap.zoom < 12
+        onTriggered: worldMap.zoomAt(1.5, worldMap.width / 2, worldMap.height / 2)
+    }
+    Action {
+        id: mapZoomOutAction
+        text: qsTr("缩小")
+        icon.source: "qrc:/icons/minus.svg"
+        enabled: worldMap.zoom > 1
+        onTriggered: worldMap.zoomAt(1 / 1.5, worldMap.width / 2, worldMap.height / 2)
+    }
+    Action {
+        id: mapGlobalAction
+        text: qsTr("全球视图")
+        icon.source: "qrc:/icons/globe.svg"
+        onTriggered: { workspace.following = false; worldMap.resetView(); }
+    }
+    Action {
+        id: mapPickAction
+        text: qsTr("地图选点")
+        icon.source: "qrc:/icons/map-pin.svg"
+        checkable: true
+        checked: workspace.picking
+        onTriggered: { workspace.picking = checked; if (checked) workspace.following = false; }
+    }
+    Keys.priority: Keys.AfterItem
+    Keys.onPressed: event => {
+        const modifiers = event.modifiers & ~(Qt.KeypadModifier | Qt.ShiftModifier);
+        if (modifiers !== Qt.NoModifier) return;
+        if (event.key === Qt.Key_Plus || event.key === Qt.Key_Equal) mapZoomInAction.trigger();
+        else if (event.key === Qt.Key_Minus) mapZoomOutAction.trigger();
+        else if (event.key === Qt.Key_F) mapFollowAction.trigger();
+        else if (event.key === Qt.Key_Space) workspace.nowAction.trigger();
+        else return;
+        event.accepted = true;
+    }
     function centerObserver() {
         following = false;
         worldMap.centerOn(clock.observerLongitude, clock.observerLatitude);
@@ -85,23 +134,25 @@ ColumnLayout {
         title: workspace.observation.name || qsTr("全球地图")
         hasTarget: workspace.satellites.selectedId !== "0"
         expanded: workspace.expanded
-        following: workspace.following
-        picking: workspace.picking
-        onFollowRequested: {
-            workspace.following = !workspace.following;
-            workspace.followTarget();
-        }
-        onNavigationStarted: workspace.following = false
-        onPickingRequested: workspace.picking = !workspace.picking
-        onExpandRequested: workspace.expandRequested()
+        followAction: mapFollowAction
+        zoomInAction: mapZoomInAction
+        zoomOutAction: mapZoomOutAction
+        globalViewAction: mapGlobalAction
+        pickAction: mapPickAction
+        expandAction: workspace.expandAction
         onDetailsRequested: workspace.detailsRequested()
     }
     Rectangle {
+        id: mapViewport
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.minimumHeight: 170
         color: Theme.background
         clip: true
+        activeFocusOnTab: true
+        Accessible.role: Accessible.Graphic
+        Accessible.name: qsTr("卫星地图")
+        Accessible.description: workspace.observation.name || qsTr("全球地图")
         Rectangle {
             anchors.centerIn: parent
             width: Math.min(parent.width, parent.height * 2 * worldMap.zoom)
@@ -225,6 +276,7 @@ ColumnLayout {
                 property real previousY
                 property real dragDistance: 0
                 onPressed: mouse => {
+                    mapViewport.forceActiveFocus(Qt.MouseFocusReason);
                     previousX = mouse.x;
                     previousY = mouse.y;
                     dragDistance = 0;
@@ -262,6 +314,13 @@ ColumnLayout {
                     worldMap.zoomAt(1.5, workspace.following ? width / 2 : mouse.x, workspace.following ? height / 2 : mouse.y);
                 }
             }
+        }
+        Rectangle {
+            anchors.fill: parent
+            color: "transparent"
+            border.width: mapViewport.activeFocus ? 1 : 0
+            border.color: Theme.accent
+            enabled: false
         }
     }
     LayerMenu {

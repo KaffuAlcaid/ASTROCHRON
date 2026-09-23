@@ -146,6 +146,7 @@ public:
     Q_INVOKABLE void refreshStorage() { emit storageChanged(); }
     int watchOrder() const { return m_watchOrder; }
     void setWatchOrder(int order);
+    Q_INVOKABLE int watchRow(const QString &id) const { return static_cast<int>(m_rows.indexOf(m_index.value(m_owners.value(id.toLongLong(), id.toLongLong()), -1))); }
 
 signals:
     void clockChanged();

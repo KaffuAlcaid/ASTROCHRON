@@ -7,24 +7,32 @@ Rectangle {
     id: sidebar
     required property SatelliteModel satellites
     required property CatalogModel catalog
-    signal catalogRequested
+    required property Action openCatalogAction
     signal groupRequested(string key)
     signal targetActivated
     color: Theme.surface
+    function focusSearch() { searchField.forceActiveFocus(Qt.ShortcutFocusReason); searchField.selectAll(); }
+    Connections {
+        target: sidebar.satellites
+        function onSelectionChanged() { list.currentIndex = sidebar.satellites.watchRow(sidebar.satellites.selectedId); }
+        function onModelReset() { list.currentIndex = sidebar.satellites.watchRow(sidebar.satellites.selectedId); }
+    }
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
         spacing: 8
         Button {
+            action: sidebar.openCatalogAction
             Layout.fillWidth: true
             text: qsTr("卫星目录 · ") + sidebar.satellites.catalogCount
             icon.source: "qrc:/icons/folder-open.svg"
             icon.color: Theme.text
-            onClicked: sidebar.catalogRequested()
         }
         TextField {
+            id: searchField
             Layout.fillWidth: true
             placeholderText: qsTr("搜索观测清单")
+            Accessible.name: placeholderText
             selectByMouse: true
             onTextChanged: sidebar.satellites.search = text
         }
@@ -45,7 +53,7 @@ Rectangle {
             IconButton {
                 icon.source: "qrc:/icons/plus.svg"
                 tip: qsTr("从目录加入目标")
-                onClicked: sidebar.catalogRequested()
+                onClicked: sidebar.openCatalogAction.trigger()
             }
         }
         RowLayout {
@@ -94,9 +102,14 @@ Rectangle {
             clip: true
             model: sidebar.satellites
             currentIndex: -1
+            activeFocusOnTab: true
+            keyNavigationEnabled: true
+            Accessible.name: qsTr("观测清单")
+            onActiveFocusChanged: if (activeFocus && currentIndex < 0 && count > 0) currentIndex = 0
             ScrollBar.vertical: ScrollBar {}
             delegate: ItemDelegate {
                 id: entry
+                required property int index
                 required property string satelliteId
                 required property string satelliteName
                 required property string originalName
@@ -105,8 +118,18 @@ Rectangle {
                 width: ListView.view.width
                 height: Math.max(58, contentItem.implicitHeight + topPadding + bottomPadding)
                 highlighted: satelliteId === sidebar.satellites.selectedId
+                focus: ListView.isCurrentItem
+                focusPolicy: Qt.ClickFocus
+                Accessible.role: Accessible.ListItem
+                Accessible.name: satelliteName + " · " + satelliteId
+                Accessible.description: predictionText
+                Accessible.selected: highlighted
+                Keys.onReturnPressed: click()
+                Keys.onEnterPressed: click()
                 background: Rectangle {
                     color: entry.highlighted ? Theme.selection : entry.hovered ? Theme.hover : "transparent"
+                    border.width: entry.visualFocus ? 1 : 0
+                    border.color: Theme.accent
                     Rectangle {
                         width: 3
                         height: parent.height
@@ -136,8 +159,8 @@ Rectangle {
                             implicitHeight: 22
                             icon.source: "qrc:/icons/minus.svg"
                             tip: qsTr("移出观测清单")
-                            opacity: entry.hovered ? 1 : 0
-                            enabled: entry.hovered
+                            opacity: entry.hovered || entry.activeFocus || activeFocus ? 1 : 0
+                            activeFocusOnTab: entry.ListView.isCurrentItem
                             onClicked: sidebar.satellites.setWatched(entry.satelliteId, false)
                         }
                     }
@@ -153,6 +176,7 @@ Rectangle {
                 ToolTip.delay: 500
                 ToolTip.text: originalName + qsTr("\n卫星编号 ") + satelliteId + qsTr("\n高度角 ") + elevationText + "\n" + predictionText
                 onClicked: {
+                    list.currentIndex = index;
                     sidebar.satellites.select(satelliteId);
                     sidebar.targetActivated();
                 }

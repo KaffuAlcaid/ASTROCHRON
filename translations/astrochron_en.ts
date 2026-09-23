@@ -63,6 +63,10 @@
             <translation>Satellite catalog</translation>
         </message>
         <message>
+            <source>关闭</source>
+            <translation>Close</translation>
+        </message>
+        <message>
             <source>目录 </source>
             <translation>Catalog </translation>
         </message>
@@ -313,6 +317,34 @@ Orbital plane </translation>
             <translation>Change location</translation>
         </message>
         <message>
+            <source>搜索观测清单</source>
+            <translation>Search watchlist</translation>
+        </message>
+        <message>
+            <source>导出观测计划</source>
+            <translation>Export observation plan</translation>
+        </message>
+        <message>
+            <source>卫星目录</source>
+            <translation>Satellite catalog</translation>
+        </message>
+        <message>
+            <source>回到现在</source>
+            <translation>Back to now</translation>
+        </message>
+        <message>
+            <source>收起地图</source>
+            <translation>Collapse map</translation>
+        </message>
+        <message>
+            <source>展开地图</source>
+            <translation>Expand map</translation>
+        </message>
+        <message>
+            <source>退出当前视图</source>
+            <translation>Leave current view</translation>
+        </message>
+        <message>
             <source>北纬 </source>
             <translation>N </translation>
         </message>
@@ -371,37 +403,25 @@ Orbital plane </translation>
             <source>目标详情</source>
             <translation>Target details</translation>
         </message>
+    </context>
+    <context>
+        <name>MapWorkspace</name>
         <message>
             <source>跟随卫星</source>
             <translation>Follow satellite</translation>
-        </message>
-        <message>
-            <source>缩小</source>
-            <translation>Zoom out</translation>
         </message>
         <message>
             <source>放大</source>
             <translation>Zoom in</translation>
         </message>
         <message>
+            <source>缩小</source>
+            <translation>Zoom out</translation>
+        </message>
+        <message>
             <source>全球视图</source>
-            <translation>Global view</translation>
+            <translation>World view</translation>
         </message>
-        <message>
-            <source>地图选点</source>
-            <translation>Map location</translation>
-        </message>
-        <message>
-            <source>收起地图</source>
-            <translation>Collapse map</translation>
-        </message>
-        <message>
-            <source>展开地图</source>
-            <translation>Expand map</translation>
-        </message>
-    </context>
-    <context>
-        <name>MapWorkspace</name>
         <message>
             <source>预览：</source>
             <translation>Preview: </translation>
@@ -433,6 +453,10 @@ Orbital plane </translation>
         <message>
             <source>全球地图</source>
             <translation>World map</translation>
+        </message>
+        <message>
+            <source>卫星地图</source>
+            <translation>Satellite map</translation>
         </message>
         <message>
             <source>地图选点</source>
@@ -1061,10 +1085,6 @@ Third-party licenses and attribution: THIRD_PARTY_NOTICES.md and the licenses fo
             <translation>Min. elevation </translation>
         </message>
         <message>
-            <source>导出观测计划</source>
-            <translation>Export observation plan</translation>
-        </message>
-        <message>
             <source>正在过境</source>
             <translation>Pass in progress</translation>
         </message>
@@ -1140,6 +1160,10 @@ Range at peak </translation>
         <message>
             <source>星等参数</source>
             <translation>Magnitude settings</translation>
+        </message>
+        <message>
+            <source>关闭</source>
+            <translation>Close</translation>
         </message>
         <message>
             <source>参考星等</source>
@@ -1247,6 +1271,10 @@ Range at peak </translation>
         <message>
             <source>导出观测计划</source>
             <translation>Export observation plan</translation>
+        </message>
+        <message>
+            <source>关闭</source>
+            <translation>Close</translation>
         </message>
         <message>
             <source>最低高度角 %1°</source>
@@ -2080,6 +2108,10 @@ Acquired </translation>
             <translation>Settings</translation>
         </message>
         <message>
+            <source>关闭</source>
+            <translation>Close</translation>
+        </message>
+        <message>
             <source>跟随当前卫星</source>
             <translation>Follow selected satellite</translation>
         </message>
@@ -2182,6 +2214,10 @@ Acquired </translation>
             <translation>Online snapshot history</translation>
         </message>
         <message>
+            <source>关闭</source>
+            <translation>Close</translation>
+        </message>
+        <message>
             <source>每组保留最近 %1 份在线快照，固定记录和本地导入长期保留</source>
             <translation>Keep the latest %1 online snapshots per group, plus pinned snapshots and local imports</translation>
         </message>
@@ -2209,6 +2245,10 @@ Acquired </translation>
     <context>
         <name>Timeline</name>
         <message>
+            <source>观测时刻</source>
+            <translation>Observation time</translation>
+        </message>
+        <message>
             <source>现在 · </source>
             <translation>Now · </translation>
         </message>
@@ -2225,10 +2265,6 @@ Peak </translation>
         <message>
             <source>现在</source>
             <translation>Now</translation>
-        </message>
-        <message>
-            <source>回到现在</source>
-            <translation>Back to now</translation>
         </message>
     </context>
     <context>

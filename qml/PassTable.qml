@@ -8,7 +8,7 @@ ColumnLayout {
     required property AppState clock
     required property SatelliteModel satellites
     property var nextPass: ({})
-    signal planRequested
+    required property Action exportAction
     spacing: 6
     RowLayout {
         Layout.fillWidth: true
@@ -35,10 +35,8 @@ ColumnLayout {
             color: Theme.muted
         }
         IconButton {
-            icon.source: "qrc:/icons/download.svg"
-            tip: qsTr("导出观测计划")
-            enabled: table.clock.hasObserver && table.satellites.selectedId !== "0"
-            onClicked: table.planRequested()
+            action: table.exportAction
+            shortcutHint: Qt.platform.os === "osx" ? "Meta+E" : "Ctrl+E"
         }
     }
     ItemDelegate {

@@ -12,6 +12,11 @@ Dialog {
     anchors.centerIn: Overlay.overlay
     width: Math.min(510, Overlay.overlay ? Overlay.overlay.width - 32 : 510)
     standardButtons: Dialog.Close
+    onOpened: {
+        loadParameters();
+        const button = standardButton(Dialog.Close);
+        if (button) button.text = Qt.binding(function() { return qsTr("关闭"); });
+    }
     function loadParameters() {
         const parameters = satellites.photometry;
         magnitude.text = parameters.magnitude === undefined ? "" : parameters.magnitude.toFixed(2);
@@ -19,7 +24,6 @@ Dialog {
         source.text = parameters.source || "";
         sourceDate.text = parameters.sourceDate || "";
     }
-    onOpened: loadParameters()
     contentItem: ColumnLayout {
         spacing: 12
         Label {

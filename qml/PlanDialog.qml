@@ -16,6 +16,10 @@ Dialog {
     anchors.centerIn: Overlay.overlay
     width: Math.min(640, Overlay.overlay.width - 32)
     height: Math.min(540, Overlay.overlay.height - 32)
+    onOpened: {
+        const button = standardButton(Dialog.Close);
+        if (button) button.text = Qt.binding(function() { return qsTr("关闭"); });
+    }
     function openPlan() {
         satellites.preparePlan();
         open();

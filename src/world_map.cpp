@@ -208,6 +208,7 @@ void WorldMap::updateLabels()
     }
     m_labels = std::move(labels);
     emit cityLabelsChanged();
+    emit viewChanged();
 }
 
 QSGNode *WorldMap::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
