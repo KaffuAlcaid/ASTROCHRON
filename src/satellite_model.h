@@ -171,6 +171,7 @@ private:
     qint64 m_selected = 0, m_snapshot = 0;
     quint64 m_revision = 0;
     double m_trackReference = 0;
+    Orbit::Track m_trackCache;
     double m_lastTime = 0;
     double m_frequency = 145.8;
     bool m_downloading = false, m_busy = false, m_needTrack = true, m_pending = false;

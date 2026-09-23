@@ -540,13 +540,14 @@ void SatelliteModel::refreshPreview()
     emit previewChanged();
     m_pool.start([this, satellites, generation, mode, time, observer] {
         QSet<qint64> candidates;
-        QVector<Orbit::Sun> suns;
+        const auto geometry = Orbit::observerGeometry(observer);
+        QVector<Orbit::PropagationContext> contexts;
         const int steps = mode == 1 ? 30 : 0;
-        for (int step = 0; step <= steps; ++step) suns.append(Orbit::sunAt(time + step * 30));
+        for (int step = 0; step <= steps; ++step) contexts.append(Orbit::propagationContext(time + step * 30, geometry));
         for (const auto &satellite : satellites) {
             std::optional<Orbit::State> previous;
             for (int step = 0; step <= steps; ++step) {
-                const auto state = Orbit::propagate(satellite, time + step * 30, observer, suns[step]);
+                const auto state = Orbit::look(satellite, contexts[step]);
                 if (!state) { previous.reset(); continue; }
                 if (state->elevation >= observer.minimumElevation) { candidates.insert(satellite.number); break; }
                 // Refine an intervening peak so short grazing passes can enter the preview.
@@ -554,8 +555,8 @@ void SatelliteModel::refreshPreview()
                     double left = previous->time, right = state->time;
                     for (int iteration = 0; iteration < 12; ++iteration) {
                         const double a = left + (right - left) / 3, b = right - (right - left) / 3;
-                        const auto first = Orbit::propagate(satellite, a, observer, Orbit::sunAt(a));
-                        const auto second = Orbit::propagate(satellite, b, observer, Orbit::sunAt(b));
+                        const auto first = Orbit::look(satellite, Orbit::propagationContext(a, geometry));
+                        const auto second = Orbit::look(satellite, Orbit::propagationContext(b, geometry));
                         if (!first || !second) break;
                         if (std::max(first->elevation, second->elevation) >= observer.minimumElevation) { candidates.insert(satellite.number); break; }
                         if (first->elevation < second->elevation) left = a; else right = b;
@@ -580,6 +581,7 @@ void SatelliteModel::refreshPreview()
 void SatelliteModel::invalidate()
 {
     ++m_revision; m_needTrack = true;
+    m_trackCache = {};
     m_gnssTime = 0;
     m_observation.clear(); m_trajectory.clear(); m_passes.clear(); m_markers.clear(); m_shadowEvents.clear();
     emit frameChanged(); emit trajectoryChanged(); requestFrame();
@@ -619,25 +621,28 @@ void SatelliteModel::requestFrame()
     const Orbit::Observer observer{m_clock->observerLatitude(), m_clock->observerLongitude(), m_clock->ellipsoidHeight() / 1000.0, m_clock->minimumElevation()};
     const QTimeZone zone(m_clock->timeZone().toUtf8());
     const bool calculateTrack = m_needTrack;
+    const auto previousTrack = calculateTrack ? m_trackCache : Orbit::Track{};
     const bool hasHeight = m_clock->hasObserverHeight();
     const auto previewCandidates = m_previewCandidates;
     const int previewMode = m_previewMode;
     if (!std::isfinite(observer.heightKm)) { setStatus([] { return tr("大地水准面数据读取失败"); }); return; }
     m_busy = true; m_pending = false; m_needTrack = false;
     emit statusChanged();
-    m_pool.start([this, satellites, gnss, calculateGnss, id, revision, time, reference, observer, zone, calculateTrack, hasHeight, watchIds, previewCandidates, previewMode] {
+    m_pool.start([this, satellites, gnss, calculateGnss, id, revision, time, reference, observer, zone, calculateTrack, previousTrack, hasHeight, watchIds, previewCandidates, previewMode] {
         QVariantList markers, trajectory, passes, shadowEvents;
         QVariantList gnssMarkers;
         QVariantMap observation;
         QHash<qint64, double> elevations;
-        const auto sun = Orbit::sunAt(time);
+        const auto geometry = Orbit::observerGeometry(observer);
+        const auto context = Orbit::propagationContext(time, geometry);
+        Orbit::Track trackCache;
         for (const auto &satellite : gnss) {
-            if (const auto state = Orbit::propagate(satellite, time, observer, sun))
+            if (const auto state = Orbit::position(satellite, context))
                 gnssMarkers.append(QVariantMap{{"id", QString::number(satellite.number)}, {"latitude", state->latitude}, {"longitude", state->longitude}});
         }
         int previewCount = 0;
         for (const auto &satellite : satellites) {
-            const auto state = Orbit::propagate(satellite, time, observer, sun);
+            const auto state = Orbit::propagate(satellite, context);
             if (!state) continue;
             elevations.insert(satellite.number, state->elevation);
             auto marker = stateMap(*state);
@@ -651,7 +656,8 @@ void SatelliteModel::requestFrame()
             observation.insert("epochAge", (time - satellite.epoch) / 86400.0);
             observation.insert("heightEstimated", !hasHeight);
             if (calculateTrack) {
-                const auto track = Orbit::track(satellite, reference - 43200, reference + 43200, observer);
+                trackCache = Orbit::track(satellite, reference - 43200, reference + 43200, observer, previousTrack);
+                const auto &track = trackCache;
                 for (const auto &sample : track.samples) trajectory.append(stateMap(sample));
                 for (qsizetype i = 1; i < track.samples.size(); ++i) {
                     const auto &a = track.samples[i - 1], &b = track.samples[i];
@@ -662,7 +668,7 @@ void SatelliteModel::requestFrame()
                         double left = a.time, right = b.time;
                         while (right - left > 0.5) {
                             const double middle = (left + right) / 2;
-                            const auto stateAt = Orbit::propagate(satellite, middle, observer, Orbit::sunAt(middle));
+                            const auto stateAt = Orbit::propagate(satellite, Orbit::propagationContext(middle, geometry));
                             if (!stateAt) break;
                             if ((stateAt->illumination >= boundary) == before) left = middle; else right = middle;
                         }
@@ -689,7 +695,7 @@ void SatelliteModel::requestFrame()
             }
         }
         QMetaObject::invokeMethod(this, [this, revision, reference, calculateTrack, markers = std::move(markers), observation = std::move(observation),
-            trajectory = std::move(trajectory), passes = std::move(passes), shadowEvents = std::move(shadowEvents), elevations = std::move(elevations), previewCount,
+            trajectory = std::move(trajectory), passes = std::move(passes), shadowEvents = std::move(shadowEvents), trackCache = std::move(trackCache), elevations = std::move(elevations), previewCount,
             gnssMarkers = std::move(gnssMarkers), calculateGnss, time]() mutable {
             m_busy = false;
             if (revision == m_revision) {
@@ -701,7 +707,10 @@ void SatelliteModel::requestFrame()
                 updateMagnitude();
                 emit frameChanged();
                 if (!m_rows.isEmpty()) emit dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1), {ElevationRole});
-                if (calculateTrack) { m_trajectory = std::move(trajectory); m_passes = std::move(passes); m_shadowEvents = std::move(shadowEvents); m_trackReference = reference; emit trajectoryChanged(); }
+                if (calculateTrack) {
+                    m_trajectory = std::move(trajectory); m_passes = std::move(passes); m_shadowEvents = std::move(shadowEvents);
+                    m_trackCache = std::move(trackCache); m_trackReference = reference; emit trajectoryChanged();
+                }
             } else if (calculateTrack) m_needTrack = true;
             emit statusChanged();
             if (m_pending || revision != m_revision) requestFrame();

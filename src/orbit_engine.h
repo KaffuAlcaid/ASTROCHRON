@@ -22,6 +22,19 @@ struct Sun {
     Vector direction;
 };
 
+struct ObserverGeometry {
+    Observer observer;
+    Vector position;
+    double sinLatitude, cosLatitude, sinLongitude, cosLongitude;
+};
+
+struct PropagationContext {
+    double time, sinGmst, cosGmst;
+    ObserverGeometry observer;
+    Sun sun;
+    double sunElevation;
+};
+
 struct State {
     double time = 0;
     Vector temePosition;
@@ -65,11 +78,14 @@ struct Track {
 };
 
 Sun sunAt(double unixSeconds);
+ObserverGeometry observerGeometry(const Observer &observer);
+PropagationContext propagationContext(double unixSeconds, const ObserverGeometry &observer);
 std::optional<Satellite> fromOmm(const QJsonObject &object, QString &error);
 QVector<Satellite> parse(const QByteArray &data, QString &error, int &skipped);
-std::optional<State> propagate(const Satellite &satellite, double unixSeconds,
-                               const Observer &observer, const Sun &sun);
-Track track(const Satellite &satellite, double start, double end, const Observer &observer);
+std::optional<State> position(const Satellite &satellite, const PropagationContext &context);
+std::optional<State> look(const Satellite &satellite, const PropagationContext &context);
+std::optional<State> propagate(const Satellite &satellite, const PropagationContext &context);
+Track track(const Satellite &satellite, double start, double end, const Observer &observer, const Track &previous = {});
 std::optional<double> apparentMagnitude(const State &state, double referenceMagnitude, double referencePhase);
 QString displayName(const Satellite &satellite);
 QString illuminationName(int illumination);

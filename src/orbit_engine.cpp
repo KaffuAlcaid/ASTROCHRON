@@ -42,14 +42,13 @@ Vector observerPosition(const Observer &observer)
             (n * (1.0 - e2) + observer.heightKm) * std::sin(latitude)};
 }
 
-std::array<double, 2> lookAngles(const Vector &delta, const Observer &observer)
+std::array<double, 2> lookAngles(const Vector &delta, const ObserverGeometry &observer)
 {
-    const double latitude = observer.latitude * rad, longitude = observer.longitude * rad;
-    const double east = -std::sin(longitude) * delta[0] + std::cos(longitude) * delta[1];
-    const double north = -std::sin(latitude) * std::cos(longitude) * delta[0]
-        - std::sin(latitude) * std::sin(longitude) * delta[1] + std::cos(latitude) * delta[2];
-    const double up = std::cos(latitude) * std::cos(longitude) * delta[0]
-        + std::cos(latitude) * std::sin(longitude) * delta[1] + std::sin(latitude) * delta[2];
+    const double east = -observer.sinLongitude * delta[0] + observer.cosLongitude * delta[1];
+    const double north = -observer.sinLatitude * observer.cosLongitude * delta[0]
+        - observer.sinLatitude * observer.sinLongitude * delta[1] + observer.cosLatitude * delta[2];
+    const double up = observer.cosLatitude * observer.cosLongitude * delta[0]
+        + observer.cosLatitude * observer.sinLongitude * delta[1] + observer.sinLatitude * delta[2];
     return {std::fmod(std::atan2(east, north) * deg + 360.0, 360.0),
             std::atan2(up, std::hypot(east, north)) * deg};
 }
@@ -221,15 +220,26 @@ QVector<Satellite> parse(const QByteArray &data, QString &error, int &skipped)
     return result;
 }
 
-std::optional<State> propagate(const Satellite &satellite, double seconds, const Observer &observer, const Sun &sun)
+ObserverGeometry observerGeometry(const Observer &observer)
+{
+    return {observer, observerPosition(observer), std::sin(observer.latitude * rad), std::cos(observer.latitude * rad),
+        std::sin(observer.longitude * rad), std::cos(observer.longitude * rad)};
+}
+
+PropagationContext propagationContext(double seconds, const ObserverGeometry &observer)
+{
+    const double gmst = SGP4Funcs::gstime_SGP4(seconds / 86400.0 + 2440587.5);
+    const auto sun = sunAt(seconds);
+    return {seconds, std::sin(gmst), std::cos(gmst), observer, sun, lookAngles(subtract(sun.position, observer.position), observer)[1]};
+}
+
+std::optional<State> position(const Satellite &satellite, const PropagationContext &context)
 {
     auto constants = satellite.constants;
-    State state; state.time = seconds;
-    if (!SGP4Funcs::sgp4(constants, (seconds - satellite.epoch) / 60.0, state.temePosition.data(), state.temeVelocity.data())) return std::nullopt;
-    const double gmst = SGP4Funcs::gstime_SGP4(seconds / 86400.0 + 2440587.5);
-    state.earthPosition = rotate(state.temePosition, gmst);
-    auto velocity = rotate(state.temeVelocity, gmst);
-    velocity[0] += spin * state.earthPosition[1]; velocity[1] -= spin * state.earthPosition[0];
+    State state; state.time = context.time;
+    if (!SGP4Funcs::sgp4(constants, (context.time - satellite.epoch) / 60.0, state.temePosition.data(), state.temeVelocity.data())) return std::nullopt;
+    state.earthPosition = {state.temePosition[0] * context.cosGmst + state.temePosition[1] * context.sinGmst,
+        -state.temePosition[0] * context.sinGmst + state.temePosition[1] * context.cosGmst, state.temePosition[2]};
     const auto &[x, y, z] = state.earthPosition;
     const double horizontal = std::hypot(x, y);
     double latitude = std::atan2(z, horizontal * (1 - e2));
@@ -243,25 +253,46 @@ std::optional<State> propagate(const Satellite &satellite, double seconds, const
     state.longitude = std::atan2(y, x) * deg;
     state.altitude = horizontal < 1e-8 ? std::abs(z) - radius * (1 - flattening)
         : horizontal / std::cos(latitude) - radius / std::sqrt(1 - e2 * std::pow(std::sin(latitude), 2));
+    return state;
+}
+
+std::optional<State> look(const Satellite &satellite, const PropagationContext &context)
+{
+    auto sample = position(satellite, context);
+    if (!sample) return std::nullopt;
+    auto &state = *sample;
+    const auto &observer = context.observer;
+    Vector velocity{state.temeVelocity[0] * context.cosGmst + state.temeVelocity[1] * context.sinGmst,
+        -state.temeVelocity[0] * context.sinGmst + state.temeVelocity[1] * context.cosGmst, state.temeVelocity[2]};
+    velocity[0] += spin * state.earthPosition[1]; velocity[1] -= spin * state.earthPosition[0];
     state.speed = norm(state.temeVelocity);
-    const auto station = observerPosition(observer);
-    const auto delta = subtract(state.earthPosition, station);
-    const auto look = lookAngles(delta, observer);
-    state.azimuth = look[0]; state.elevation = look[1]; state.range = norm(delta);
+    const auto delta = subtract(state.earthPosition, observer.position);
+    const auto angles = lookAngles(delta, observer);
+    state.azimuth = angles[0]; state.elevation = angles[1]; state.range = norm(delta);
     state.rangeRate = dot(delta, velocity) / state.range;
-    const double lat = observer.latitude * rad, lon = observer.longitude * rad;
-    const double upSpeed = velocity[0] * std::cos(lat) * std::cos(lon) + velocity[1] * std::cos(lat) * std::sin(lon) + velocity[2] * std::sin(lat);
+    const double upSpeed = velocity[0] * observer.cosLatitude * observer.cosLongitude
+        + velocity[1] * observer.cosLatitude * observer.sinLongitude + velocity[2] * observer.sinLatitude;
     const double cosineElevation = std::cos(state.elevation * rad);
     if (std::abs(cosineElevation) > 1e-8)
         state.elevationRate = (upSpeed - state.rangeRate * std::sin(state.elevation * rad)) / (state.range * cosineElevation) * deg;
-    state.sunElevation = lookAngles(subtract(sun.position, station), observer)[1];
+    return sample;
+}
+
+std::optional<State> propagate(const Satellite &satellite, const PropagationContext &context)
+{
+    auto sample = look(satellite, context);
+    if (!sample) return std::nullopt;
+    auto &state = *sample;
+    const auto &sun = context.sun;
+    const auto delta = subtract(state.earthPosition, context.observer.position);
+    state.sunElevation = context.sunElevation;
     const auto satelliteToSun = subtract(sun.position, state.earthPosition);
     const double r = norm(state.earthPosition), d = norm(satelliteToSun);
     state.phaseAngle = std::acos(std::clamp(-dot(delta, satelliteToSun) / (state.range * d), -1.0, 1.0)) * deg;
     const double angle = std::acos(std::clamp(-dot(state.earthPosition, satelliteToSun) / (r * d), -1.0, 1.0));
     const double earthAngle = std::asin(std::min(1.0, radius / r)), sunAngle = std::asin(695700.0 / d);
     state.illumination = angle < earthAngle - sunAngle ? 2 : angle < earthAngle + sunAngle ? 1 : 0;
-    return state;
+    return sample;
 }
 
 std::optional<double> apparentMagnitude(const State &state, double referenceMagnitude, double referencePhase)
@@ -279,13 +310,22 @@ std::optional<double> apparentMagnitude(const State &state, double referenceMagn
     return std::isfinite(magnitude) ? std::optional(magnitude) : std::nullopt;
 }
 
-Track track(const Satellite &satellite, double start, double end, const Observer &observer)
+Track track(const Satellite &satellite, double start, double end, const Observer &observer, const Track &previous)
 {
     Track result;
-    const auto at = [&](double time) { return propagate(satellite, time, observer, sunAt(time)); };
-    for (double time = start; time <= end; time += 30) {
-        if (auto sample = at(time)) result.samples.append(*sample);
-    }
+    const auto geometry = observerGeometry(observer);
+    const auto at = [&](double time) { return propagate(satellite, propagationContext(time, geometry)); };
+    qsizetype cached = 0;
+    const auto appendSample = [&](double time) {
+        while (cached < previous.samples.size() && previous.samples[cached].time < time) ++cached;
+        if (cached < previous.samples.size() && previous.samples[cached].time == time)
+            result.samples.append(previous.samples[cached]);
+        else if (const auto sample = at(time)) result.samples.append(*sample);
+    };
+    // A fixed UTC grid lets successive time windows share their interior samples.
+    appendSample(start);
+    for (double time = (std::floor(start / 30) + 1) * 30; time < end; time += 30) appendSample(time);
+    if (end > start) appendSample(end);
     const auto crossing = [&](double left, double right, bool rising) {
         while (right - left > 0.5) {
             const double middle = (left + right) / 2;
