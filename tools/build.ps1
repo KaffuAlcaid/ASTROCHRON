@@ -2,6 +2,7 @@ param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
     [string]$QtRoot = '',
+    [string]$DeployDirectory = '',
     [switch]$Deploy
 )
 
@@ -44,12 +45,19 @@ if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 
 if ($Deploy) {
-    $destination = Join-Path $projectRoot ('.cache/dist/ASTROCHRON-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+    $destination = if ($DeployDirectory) { [IO.Path]::GetFullPath($DeployDirectory) }
+        else { Join-Path $projectRoot ('.cache/dist/ASTROCHRON-' + (Get-Date -Format 'yyyyMMdd-HHmmss')) }
     if (Test-Path -LiteralPath $destination) { throw 'Deployment directory already exists.' }
     & cmake --install $buildDirectory --prefix $destination
     if ($LASTEXITCODE -ne 0) { throw 'Application installation failed.' }
     $deploymentMode = if ($Configuration -eq 'Debug') { '--debug' } else { '--release' }
     $runtimeDirectory = Join-Path $toolchainRoot 'msvc-runtime/x64'
+    if (!(Test-Path -LiteralPath $runtimeDirectory) -and $env:VCToolsRedistDir) {
+        $runtimeDirectory = Join-Path $env:VCToolsRedistDir 'x64/Microsoft.VC143.CRT'
+    }
+    if ($Configuration -eq 'Release' -and !(Test-Path -LiteralPath (Join-Path $runtimeDirectory 'vcruntime140.dll'))) {
+        throw 'The x64 VC runtime DLLs were not found. Load the MSVC x64 environment before deploying.'
+    }
     $deploymentArguments = @($deploymentMode, '--verbose', '0', '--qmldir', (Join-Path $projectRoot 'qml'),
         '--translations', 'zh_CN', '--no-system-dxc-compiler', '--skip-plugin-types', 'qmltooling,generic',
         '--exclude-plugins', 'qsqlibase,qsqlmimer,qsqloci,qsqlodbc,qsqlpsql')
