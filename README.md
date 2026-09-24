@@ -34,13 +34,13 @@
 | [Windows 安装器](https://github.com/KaffuAlcaid/ASTROCHRON/releases/download/v0.1.0/ASTROCHRON-v0.1.0-windows-x64-setup.exe) | 通过安装向导选择安装目录 |
 | [免安装 ZIP](https://github.com/KaffuAlcaid/ASTROCHRON/releases/download/v0.1.0/ASTROCHRON-v0.1.0-windows-x64.zip) | 完整解压后运行 |
 
-安装器可选择原目录覆盖安装，观测地点、清单和本地轨道资料保存在 Windows 用户配置中
+安装器可选择原目录覆盖安装。观测地点、清单和本地轨道资料保存在当前 Windows 用户账户下，覆盖安装不会清除这些资料；更换账户时不会自动迁移
 
 ## 快速开始
 
 1. 安装并启动程序，或解压 ZIP 后运行 `ASTROCHRON.exe`
 2. 首次启动时选择语言和观测城市，确认地点，最低高度角保持默认 `10°`
-3. 等待轨道目录载入，在左侧观测清单选择一个目标，例如“国际空间站”
+3. 首次使用需联网获取 CelesTrak 轨道数据，或在“卫星目录”导入 TLE/OMM 文件；在线获取失败时检查网络并重试。目录载入后，在左侧观测清单选择目标，例如“国际空间站”
 4. 点击地图下方的一条过境记录，地图、天空图和观测信息会跳到该次过境的最高点
 5. 拖动底部时间轴查看过境前后的位置，点击“回到现在”恢复实时跟踪
 
