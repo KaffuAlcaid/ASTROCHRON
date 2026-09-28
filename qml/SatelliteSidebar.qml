@@ -5,7 +5,7 @@ import Astrochron
 
 Rectangle {
     id: sidebar
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     required property CatalogModel catalog
     required property Action openCatalogAction
     signal groupRequested(string key)
@@ -15,6 +15,9 @@ Rectangle {
     Connections {
         target: sidebar.satellites
         function onSelectionChanged() { list.currentIndex = sidebar.satellites.watchRow(sidebar.satellites.selectedId); }
+    }
+    Connections {
+        target: sidebar.satellites.watchlistModel
         function onModelReset() { list.currentIndex = sidebar.satellites.watchRow(sidebar.satellites.selectedId); }
     }
     ColumnLayout {
@@ -100,7 +103,7 @@ Rectangle {
             Layout.preferredHeight: Math.max(64, Math.min(contentHeight, 8 * 90))
             Layout.maximumHeight: Math.max(64, Math.min(contentHeight, 8 * 90))
             clip: true
-            model: sidebar.satellites
+            model: sidebar.satellites.watchlistModel
             currentIndex: -1
             activeFocusOnTab: true
             keyNavigationEnabled: true

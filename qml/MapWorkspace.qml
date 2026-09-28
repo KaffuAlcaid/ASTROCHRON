@@ -7,7 +7,7 @@ import Astrochron
 ColumnLayout {
     id: workspace
     required property AppState clock
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     required property Action expandAction
     property var passInfo: ({})
     property bool expanded: false

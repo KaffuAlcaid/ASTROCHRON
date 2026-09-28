@@ -1,3 +1,4 @@
+#include "pass_predictor.h"
 #include "orbit_layer.h"
 
 #include <QSGFlatColorMaterial>
@@ -243,7 +244,7 @@ QSGNode *OrbitLayer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         for (qsizetype i = 1; i < m_trajectory.size(); ++i) {
             const auto a = m_trajectory[i - 1].toMap(), b = m_trajectory[i].toMap();
             const double ta = a.value("time").toDouble(), tb = b.value("time").toDouble();
-            if (tb <= ta || tb - ta > 31) continue;
+            if (tb <= ta || tb - ta > Orbit::maximumSampleGapSeconds) continue;
             const auto pa = project(a.value("longitude").toDouble(), a.value("latitude").toDouble());
             auto pb = project(b.value("longitude").toDouble(), b.value("latitude").toDouble());
             if (pb.x() - pa.x() > worldWidth / 2) pb.rx() -= worldWidth;

@@ -1,10 +1,15 @@
 #pragma once
 
 #include "app_state.h"
-#include "orbit_engine.h"
-#include <QAbstractListModel>
+#include "orbit_types.h"
+#include "pass_predictor.h"
+#include "observation_database.h"
+#include "snapshot_repository.h"
+#include "watchlist_model.h"
+#include "observation_plan.h"
+#include "orbit_frame_calculator.h"
+#include "photometry_catalog.h"
 #include <QNetworkAccessManager>
-#include <QSqlDatabase>
 #include <QThreadPool>
 #include <QUrl>
 #include <QSet>
@@ -12,11 +17,11 @@
 #include <atomic>
 #include <memory>
 
-class CatalogModel;
-
-class SatelliteModel : public QAbstractListModel {
+class SatelliteController : public QObject {
     Q_OBJECT
     QML_ELEMENT
+    Q_PROPERTY(WatchlistModel *watchlistModel READ watchlistModel CONSTANT)
+    Q_PROPERTY(double maximumTrackGap READ maximumTrackGap CONSTANT)
     Q_PROPERTY(AppState *clock READ clock WRITE setClock NOTIFY clockChanged)
     Q_PROPERTY(QString search READ search WRITE setSearch NOTIFY watchlistChanged)
     Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY catalogChanged)
@@ -65,17 +70,17 @@ class SatelliteModel : public QAbstractListModel {
     Q_PROPERTY(bool snapshotImported READ snapshotImported NOTIFY sourceChanged)
     Q_PROPERTY(int watchOrder READ watchOrder WRITE setWatchOrder NOTIFY watchlistChanged)
 
-public:
-    explicit SatelliteModel(QObject *parent = nullptr);
-    ~SatelliteModel() override;
-    enum Role { IdRole = Qt::UserRole + 1, NameRole, OriginalRole, ElevationRole, PredictionRole };
-    int rowCount(const QModelIndex &parent = {}) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    QHash<int, QByteArray> roleNames() const override;
+  public:
+    explicit SatelliteController(QObject *parent = nullptr);
+    ~SatelliteController() override;
+    WatchlistModel *watchlistModel() { return &m_watchlist; }
+    double maximumTrackGap() const { return Orbit::maximumSampleGapSeconds; }
+    const SatelliteCatalog &catalog() const { return m_catalog; }
+    bool usingLocalConstellation() const;
     AppState *clock() const { return m_clock; }
     void setClock(AppState *clock);
-    QString search() const { return m_search; }
-    void setSearch(const QString &search);
+    QString search() const { return m_watchlist.search(); }
+    void setSearch(const QString &search) { m_watchlist.setSearch(search); }
     QString group() const { return m_group; }
     void setGroup(const QString &group);
     QVariantList groups() const;
@@ -97,10 +102,10 @@ public:
     QString status() const { return m_status ? m_status() : QString(); }
     bool downloading() const { return m_downloading; }
     bool calculating() const { return m_busy; }
-    int total() const { return static_cast<int>(m_watchlist.size()); }
-    int visibleCount() const { return static_cast<int>(m_rows.size()); }
-    int catalogCount() const { return static_cast<int>(m_targets.size()); }
-    bool selectedWatched() const { return m_watchlist.contains(QString::number(m_selected)); }
+    int total() const { return static_cast<int>(m_watchlist.ids().size()); }
+    int visibleCount() const { return m_watchlist.rowCount(); }
+    int catalogCount() const { return static_cast<int>(m_catalog.targets().size()); }
+    bool selectedWatched() const { return m_watchlist.contains(m_selected); }
     Q_INVOKABLE bool isWatched(const QString &id) const;
     Q_INVOKABLE void setWatched(const QString &id, bool watched);
     bool previewActive() const { return !m_previewGroup.isEmpty(); }
@@ -115,7 +120,7 @@ public:
     double receiveFrequency() const { return m_frequency; }
     void setReceiveFrequency(double value);
     QVariantMap photometry() const;
-    QString photometryStatus() const { return m_photometryStatus ? m_photometryStatus() : QString(); }
+    QString photometryStatus() const { return m_photometry.status(); }
     Q_INVOKABLE bool setPhotometry(double magnitude, int phase, const QString &source, const QString &sourceDate);
     Q_INVOKABLE bool clearPhotometry();
     Q_INVOKABLE bool importMagnitudes(const QUrl &url, const QString &sourceDate);
@@ -144,11 +149,11 @@ public:
     Q_INVOKABLE void disableCleanup();
     Q_INVOKABLE void compactDatabase(bool full = true);
     Q_INVOKABLE void refreshStorage() { emit storageChanged(); }
-    int watchOrder() const { return m_watchOrder; }
-    void setWatchOrder(int order);
-    Q_INVOKABLE int watchRow(const QString &id) const { return static_cast<int>(m_rows.indexOf(m_index.value(m_owners.value(id.toLongLong(), id.toLongLong()), -1))); }
+    int watchOrder() const { return m_watchlist.order(); }
+    void setWatchOrder(int order) { m_watchlist.setOrder(order); }
+    Q_INVOKABLE int watchRow(const QString &id) const { return m_watchlist.rowFor(id.toLongLong()); }
 
-signals:
+  signals:
     void clockChanged();
     void catalogChanged();
     void selectionChanged();
@@ -166,55 +171,35 @@ signals:
     void planChanged();
     void storageChanged();
 
-private:
-    friend class CatalogModel;
-    struct Source { QString group; QString url; qint64 snapshot = 0; qint64 acquired = 0; };
-    struct Photometry { double magnitude = 0; int phase = 90; QString source; bool manual = false; QString sourceDate; qint64 recordedAt = 0; QString internationalId; };
-    static QHash<qint64, Photometry> readMagnitudes(QIODevice &input, const Photometry &metadata, int &skipped);
-    const Photometry *selectedPhotometry() const;
+  private:
+    FrameRequest frameRequest() const;
+    void applyFrame(FrameResult result);
     void updateMagnitude();
-    QString constellationKey(const Orbit::Satellite &satellite) const;
-    bool usingLocalConstellation() const;
-    void filter();
     void requestFrame();
     void invalidate();
-    void install(QVector<Orbit::Satellite> satellites, Source source);
+    void install(QVector<Orbit::Satellite> satellites, OrbitSource source);
     void refreshPreview();
-    bool store(const QByteArray &payload, const QString &source, const QString &group);
-    bool initializeDatabase();
+    std::optional<OrbitSnapshot> store(const QByteArray &payload, const QString &source, const QString &group);
     bool pruneSnapshots();
     void requestWatchPredictions();
     void calculateWatchPredictions();
     void updateWatchRows();
-    void sortWatchRows();
     void setStatus(std::function<QString()> status);
     const Orbit::Satellite *selected() const;
     AppState *m_clock = nullptr;
     QNetworkAccessManager m_network;
-    QSqlDatabase m_database;
+    ObservationDatabase m_database;
+    SnapshotRepository m_snapshots;
+    SatelliteCatalog m_catalog;
+    WatchlistModel m_watchlist;
     QThreadPool m_pool;
     QSettings m_settings;
-    QHash<qint64, Photometry> m_photometry;
-    QHash<qint64, Photometry> m_defaultPhotometry;
-    std::function<QString()> m_photometryStatus;
-    QVector<Orbit::Satellite> m_satellites;
-    QHash<qint64, int> m_index;
-    QHash<qint64, Source> m_sources;
-    QHash<QString, Source> m_groupSources;
+    PhotometryCatalog m_photometry;
     QHash<QString, qint64> m_retryAfter;
-    QHash<qint64, QString> m_prns, m_planes;
-    QHash<QString, QSet<qint64>> m_groupMembers;
-    QStringList m_watchlist;
     qint64 m_lastWatchedSelection = 0;
-    QVector<int> m_targets;
-    QVector<int> m_gnssTargets;
-    QHash<qint64, qint64> m_owners;
-    QHash<qint64, QVector<int>> m_members;
-    QVector<int> m_rows;
-    QHash<qint64, double> m_elevations;
-    QString m_search, m_group = QStringLiteral("catalog"), m_source;
+    QString m_group = QStringLiteral("catalog");
     std::function<QString()> m_status;
-    qint64 m_selected = 0, m_snapshot = 0;
+    qint64 m_selected = 0;
     quint64 m_revision = 0;
     double m_trackReference = 0;
     Orbit::Track m_trackCache;
@@ -223,8 +208,10 @@ private:
     quint64 m_calculationRevision = 0;
     double m_frequency = 145.8;
     bool m_downloading = false, m_busy = false, m_needTrack = true, m_pending = false;
+    std::optional<Orbit::State> m_currentState;
     QVariantMap m_observation;
-    QVariantList m_markers, m_trajectory, m_passes, m_shadowEvents;
+    QVariantList m_markers, m_trajectory;
+    QVector<ShadowEvent> m_shadowEvents;
     QVariantList m_gnssMarkers;
     double m_gnssTime = 0;
     QString m_previewGroup;
@@ -233,25 +220,18 @@ private:
     bool m_previewBusy = false, m_previewPending = false;
     quint64 m_previewRevision = 0;
     double m_previewTime = 0;
-    struct Plan {
-        Orbit::Satellite satellite;
-        Orbit::Observer observer;
-        QString observerName, source;
-        QTimeZone zone;
-        double start = 0, end = 0, height = 0;
-        bool heightKnown = false;
-        QVector<Orbit::Pass> passes;
-    } m_plan;
+    ObservationPlan m_plan;
     bool m_planBusy = false;
     quint64 m_planRevision = 0;
     std::function<QString()> m_planStatus;
     int m_snapshotRetention = 10;
     bool m_autoCleanup = false, m_storageBusy = false;
     std::function<QString()> m_storageStatus;
-    struct WatchPrediction { Orbit::Satellite satellite; QVector<Orbit::Pass> passes; };
+    struct WatchPrediction {
+        Orbit::Satellite satellite;
+        QVector<Orbit::Pass> passes;
+    };
     QHash<qint64, WatchPrediction> m_watchPredictions;
-    QHash<qint64, QString> m_watchSummaries;
-    QHash<qint64, double> m_watchNextTimes;
     Orbit::Observer m_watchObserver;
     QTimer m_watchTimer;
     std::shared_ptr<std::atomic_bool> m_watchCancel;
@@ -259,5 +239,4 @@ private:
     qint64 m_watchDay = -1, m_watchRequestedDay = -1;
     double m_watchClockTime = 0, m_watchNextBoundary = 0;
     bool m_watchBusy = false;
-    int m_watchOrder = 0;
 };

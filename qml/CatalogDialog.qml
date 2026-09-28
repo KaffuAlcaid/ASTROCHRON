@@ -5,7 +5,7 @@ import Astrochron
 
 Dialog {
     id: dialog
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     required property CatalogModel catalog
     signal importRequested
     signal inspectionRequested

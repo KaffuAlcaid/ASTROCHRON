@@ -2,3 +2,8 @@
 /docs/design.md
 /node_modules/
 /CMakeUserPresets.json
+.idea/
+/cmake-build-*/
+/.clang-format
+/tests/
+/docs/development.md

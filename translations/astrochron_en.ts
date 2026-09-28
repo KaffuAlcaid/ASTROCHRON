@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS []>
+<!DOCTYPE TS PUBLIC "" ""[]>
 <TS version="2.1" language="en" sourcelanguage="zh_CN">
     <context>
         <name>AppState</name>
@@ -175,38 +175,6 @@ Orbital plane </translation>
     </context>
     <context>
         <name>CatalogModel</name>
-        <message>
-            <source>空间站</source>
-            <translation>Space stations</translation>
-        </message>
-        <message>
-            <source>北斗</source>
-            <translation>BeiDou</translation>
-        </message>
-        <message>
-            <source>伽利略</source>
-            <translation>Galileo</translation>
-        </message>
-        <message>
-            <source>千帆</source>
-            <translation>Qianfan</translation>
-        </message>
-        <message>
-            <source>互联网低轨</source>
-            <translation>Guowang</translation>
-        </message>
-        <message>
-            <source>柯伊伯</source>
-            <translation>Kuiper</translation>
-        </message>
-        <message>
-            <source>铱星</source>
-            <translation>Iridium</translation>
-        </message>
-        <message>
-            <source>其他目标</source>
-            <translation>Other objects</translation>
-        </message>
         <message>
             <source>暂无</source>
             <translation>N/A</translation>
@@ -465,6 +433,25 @@ Orbital plane </translation>
         <message>
             <source>地图选点</source>
             <translation>Map location</translation>
+        </message>
+    </context>
+    <context>
+        <name>ObservationDatabase</name>
+        <message>
+            <source>轨道资料库打开失败：</source>
+            <translation>Unable to open orbit database: </translation>
+        </message>
+        <message>
+            <source>数据库初始化失败：%1</source>
+            <translation>Could not initialize database: %1</translation>
+        </message>
+        <message>
+            <source>数据库版本较高，请使用对应版本的 ASTROCHRON</source>
+            <translation>Open this database with a compatible version of ASTROCHRON</translation>
+        </message>
+        <message>
+            <source>数据库升级失败：%1</source>
+            <translation>Could not upgrade database: %1</translation>
         </message>
     </context>
     <context>
@@ -869,6 +856,173 @@ Third-party licenses and attribution: THIRD_PARTY_NOTICES.md and the licenses fo
         </message>
     </context>
     <context>
+        <name>ObservationPlanExporter</name>
+        <message>
+            <source>%1（%2°, %3°）</source>
+            <translation>%1 (%2°, %3°)</translation>
+        </message>
+        <message>
+            <source>卫星</source>
+            <translation>Satellite</translation>
+        </message>
+        <message>
+            <source>开始（UTC）</source>
+            <translation>Start (UTC)</translation>
+        </message>
+        <message>
+            <source>最高点（UTC）</source>
+            <translation>Peak (UTC)</translation>
+        </message>
+        <message>
+            <source>结束（UTC）</source>
+            <translation>End (UTC)</translation>
+        </message>
+        <message>
+            <source>最高高度角（°）</source>
+            <translation>Maximum elevation (°)</translation>
+        </message>
+        <message>
+            <source>持续时间（s）</source>
+            <translation>Duration (s)</translation>
+        </message>
+        <message>
+            <source>开始方位角（°）</source>
+            <translation>Start azimuth (°)</translation>
+        </message>
+        <message>
+            <source>结束方位角（°）</source>
+            <translation>End azimuth (°)</translation>
+        </message>
+        <message>
+            <source>光学条件</source>
+            <translation>Optical conditions</translation>
+        </message>
+        <message>
+            <source>光学区间（UTC）</source>
+            <translation>Optical intervals (UTC)</translation>
+        </message>
+        <message>
+            <source>轨道历元（UTC）</source>
+            <translation>Orbit epoch (UTC)</translation>
+        </message>
+        <message>
+            <source>观测地点</source>
+            <translation>Observer location</translation>
+        </message>
+        <message>
+            <source>纬度（°）</source>
+            <translation>Latitude (°)</translation>
+        </message>
+        <message>
+            <source>经度（°）</source>
+            <translation>Longitude (°)</translation>
+        </message>
+        <message>
+            <source>海拔（m）</source>
+            <translation>Elevation (m)</translation>
+        </message>
+        <message>
+            <source>最低高度角（°）</source>
+            <translation>Minimum elevation (°)</translation>
+        </message>
+        <message>
+            <source>时区</source>
+            <translation>Time zone</translation>
+        </message>
+        <message>
+            <source>开始（当地时间）</source>
+            <translation>Start (local time)</translation>
+        </message>
+        <message>
+            <source>最高点（当地时间）</source>
+            <translation>Peak (local time)</translation>
+        </message>
+        <message>
+            <source>结束（当地时间）</source>
+            <translation>End (local time)</translation>
+        </message>
+        <message>
+            <source>起点截断</source>
+            <translation>Start clipped</translation>
+        </message>
+        <message>
+            <source>终点截断</source>
+            <translation>End clipped</translation>
+        </message>
+        <message>
+            <source>数据来源</source>
+            <translation>Data source</translation>
+        </message>
+        <message>
+            <source>条件欠佳</source>
+            <translation>Unfavorable</translation>
+        </message>
+        <message>
+            <source>具备光学条件</source>
+            <translation>Optical conditions met</translation>
+        </message>
+        <message>
+            <source>ASTROCHRON · %1观测时段（时段内最高 %2°）</source>
+            <translation>ASTROCHRON · %1 observation interval (maximum within interval %2°)</translation>
+        </message>
+        <message>
+            <source>ASTROCHRON · %1过境（峰值 %2°）</source>
+            <translation>ASTROCHRON · %1 pass (peak %2°)</translation>
+        </message>
+        <message>
+            <source>时段内最高点：%1</source>
+            <translation>Peak within interval: %1</translation>
+        </message>
+        <message>
+            <source>最高点：%1</source>
+            <translation>Peak: %1</translation>
+        </message>
+        <message>
+            <source>开始方位：%1 %2°；结束方位：%3 %4°</source>
+            <translation>Start azimuth: %1 %2°; end azimuth: %3 %4°</translation>
+        </message>
+        <message>
+            <source>最低高度角：%1°</source>
+            <translation>Minimum elevation: %1°</translation>
+        </message>
+        <message>
+            <source>当地时间：%1 / %2；时区：%3</source>
+            <translation>Local time: %1 / %2; time zone: %3</translation>
+        </message>
+        <message>
+            <source>轨道历元（UTC）：%1</source>
+            <translation>Orbit epoch (UTC): %1</translation>
+        </message>
+        <message>
+            <source>观测地点：%1</source>
+            <translation>Observer: %1</translation>
+        </message>
+        <message>
+            <source>海拔：%1</source>
+            <translation>Elevation: %1</translation>
+        </message>
+        <message>
+            <source>待填写</source>
+            <translation>Not specified</translation>
+        </message>
+        <message>
+            <source>光学区间（UTC）：%1</source>
+            <translation>Optical intervals (UTC): %1</translation>
+        </message>
+        <message>
+            <source>数据来源：%1</source>
+            <translation>Source: %1</translation>
+        </message>
+        <message>
+            <source>时段开始前已高于最低高度角</source>
+            <translation>Above the minimum elevation before the interval starts</translation>
+        </message>
+        <message>
+            <source>时段结束时仍高于最低高度角</source>
+            <translation>Above the minimum elevation when the interval ends</translation>
+        </message>
+    </context>
+    <context>
         <name>ObserverDialog</name>
         <message>
             <source>观测地点</source>
@@ -1164,6 +1318,57 @@ Range at peak </translation>
         </message>
     </context>
     <context>
+        <name>PhotometryCatalog</name>
+        <message>
+            <source>请填写有效的资料日期（YYYY-MM-DD）</source>
+            <translation>Enter a valid source date (YYYY-MM-DD)</translation>
+        </message>
+        <message>
+            <source>星等参数保存失败：</source>
+            <translation>Unable to save magnitude settings: </translation>
+        </message>
+        <message>
+            <source>星等参数已保存</source>
+            <translation>Magnitude settings saved</translation>
+        </message>
+        <message>
+            <source>星等参数清除失败：</source>
+            <translation>Unable to clear magnitude settings: </translation>
+        </message>
+        <message>
+            <source>使用内置星等资料</source>
+            <translation>Using bundled magnitude data</translation>
+        </message>
+        <message>
+            <source>星等参数已清除</source>
+            <translation>Magnitude settings cleared</translation>
+        </message>
+        <message>
+            <source>星等表打开失败：</source>
+            <translation>Unable to open magnitude catalog: </translation>
+        </message>
+        <message>
+            <source>文件中没有可用的 QuickSat 星等记录</source>
+            <translation>No usable QuickSat magnitude records in this file</translation>
+        </message>
+        <message>
+            <source>星等资料库写入失败：</source>
+            <translation>Unable to write photometry database: </translation>
+        </message>
+        <message>
+            <source>星等表导入失败：</source>
+            <translation>Unable to import magnitude catalog: </translation>
+        </message>
+        <message>
+            <source>星等表保存失败：</source>
+            <translation>Unable to save magnitude catalog: </translation>
+        </message>
+        <message>
+            <source>已导入 %1 条星等记录，保留 %2 条手动参数，跳过 %3 行空缺或格式异常记录</source>
+            <translation>Imported %1 magnitude records; kept %2 manual entries; skipped %3 empty or invalid records</translation>
+        </message>
+    </context>
+    <context>
         <name>PhotometryDialog</name>
         <message>
             <source>星等参数</source>
@@ -1326,26 +1531,69 @@ Range at peak </translation>
         </message>
     </context>
     <context>
-        <name>SatelliteModel</name>
+        <name>SatelliteCatalog</name>
         <message>
-            <source>SeeSat-L / Jay Respler（2022 年构型）</source>
-            <translation>SeeSat-L / Jay Respler (2022 configuration)</translation>
+            <source>空间站</source>
+            <translation>Space stations</translation>
         </message>
         <message>
-            <source>轨道资料库打开失败：</source>
-            <translation>Unable to open orbit database: </translation>
+            <source>伽利略</source>
+            <translation>Galileo</translation>
         </message>
         <message>
-            <source>待计算</source>
-            <translation>Pending</translation>
+            <source>北斗</source>
+            <translation>BeiDou</translation>
         </message>
         <message>
-            <source>预报计算中</source>
-            <translation>Calculating passes</translation>
+            <source>千帆</source>
+            <translation>Qianfan</translation>
         </message>
         <message>
-            <source>请选择观测地点</source>
-            <translation>Choose an observer location</translation>
+            <source>互联网低轨</source>
+            <translation>Guowang</translation>
+        </message>
+        <message>
+            <source>柯伊伯</source>
+            <translation>Kuiper</translation>
+        </message>
+        <message>
+            <source>铱星</source>
+            <translation>Iridium</translation>
+        </message>
+        <message>
+            <source>其他目标</source>
+            <translation>Other objects</translation>
+        </message>
+    </context>
+    <context>
+        <name>SatelliteController</name>
+        <message>
+            <source>快照保存失败：%1</source>
+            <translation>Could not save snapshot: %1</translation>
+        </message>
+        <message>
+            <source>历史资料清理失败：%1</source>
+            <translation>Could not clean up history: %1</translation>
+        </message>
+        <message>
+            <source>已清理 %1 份在线历史快照</source>
+            <translation>Removed %1 online snapshots</translation>
+        </message>
+        <message>
+            <source>轨道下载完成后可整理数据库</source>
+            <translation>Database maintenance is available after the orbit download finishes</translation>
+        </message>
+        <message>
+            <source>正在整理数据库</source>
+            <translation>Database maintenance in progress</translation>
+        </message>
+        <message>
+            <source>数据库已整理</source>
+            <translation>Database maintenance complete</translation>
+        </message>
+        <message>
+            <source>数据库整理失败：%1</source>
+            <translation>Database maintenance failed: %1</translation>
         </message>
         <message>
             <source>本地完整目录</source>
@@ -1556,6 +1804,10 @@ Range at peak </translation>
             <translation>Downloaded %1 element sets</translation>
         </message>
         <message>
+            <source>，%1 条根数未载入：%2</source>
+            <translation>, %1 element records skipped: %2</translation>
+        </message>
+        <message>
             <source>正在整理数据库，请稍后保存资料</source>
             <translation>Database maintenance is in progress; save data afterwards</translation>
         </message>
@@ -1588,172 +1840,12 @@ Range at peak </translation>
             <translation>Orbital elements saved</translation>
         </message>
         <message>
+            <source>大地水准面数据读取失败</source>
+            <translation>Unable to read geoid data</translation>
+        </message>
+        <message>
             <source>12 h 内暂无满足高度角条件的过境</source>
             <translation>No passes above the elevation limit in 12 h</translation>
-        </message>
-        <message>
-            <source>%1（%2°, %3°）</source>
-            <translation>%1 (%2°, %3°)</translation>
-        </message>
-        <message>
-            <source>卫星</source>
-            <translation>Satellite</translation>
-        </message>
-        <message>
-            <source>开始（UTC）</source>
-            <translation>Start (UTC)</translation>
-        </message>
-        <message>
-            <source>最高点（UTC）</source>
-            <translation>Peak (UTC)</translation>
-        </message>
-        <message>
-            <source>结束（UTC）</source>
-            <translation>End (UTC)</translation>
-        </message>
-        <message>
-            <source>最高高度角（°）</source>
-            <translation>Maximum elevation (°)</translation>
-        </message>
-        <message>
-            <source>持续时间（s）</source>
-            <translation>Duration (s)</translation>
-        </message>
-        <message>
-            <source>开始方位角（°）</source>
-            <translation>Start azimuth (°)</translation>
-        </message>
-        <message>
-            <source>结束方位角（°）</source>
-            <translation>End azimuth (°)</translation>
-        </message>
-        <message>
-            <source>光学条件</source>
-            <translation>Optical conditions</translation>
-        </message>
-        <message>
-            <source>光学区间（UTC）</source>
-            <translation>Optical intervals (UTC)</translation>
-        </message>
-        <message>
-            <source>轨道历元（UTC）</source>
-            <translation>Orbit epoch (UTC)</translation>
-        </message>
-        <message>
-            <source>观测地点</source>
-            <translation>Observer location</translation>
-        </message>
-        <message>
-            <source>纬度（°）</source>
-            <translation>Latitude (°)</translation>
-        </message>
-        <message>
-            <source>经度（°）</source>
-            <translation>Longitude (°)</translation>
-        </message>
-        <message>
-            <source>海拔（m）</source>
-            <translation>Elevation (m)</translation>
-        </message>
-        <message>
-            <source>最低高度角（°）</source>
-            <translation>Minimum elevation (°)</translation>
-        </message>
-        <message>
-            <source>时区</source>
-            <translation>Time zone</translation>
-        </message>
-        <message>
-            <source>开始（当地时间）</source>
-            <translation>Start (local time)</translation>
-        </message>
-        <message>
-            <source>最高点（当地时间）</source>
-            <translation>Peak (local time)</translation>
-        </message>
-        <message>
-            <source>结束（当地时间）</source>
-            <translation>End (local time)</translation>
-        </message>
-        <message>
-            <source>起点截断</source>
-            <translation>Start clipped</translation>
-        </message>
-        <message>
-            <source>终点截断</source>
-            <translation>End clipped</translation>
-        </message>
-        <message>
-            <source>数据来源</source>
-            <translation>Data source</translation>
-        </message>
-        <message>
-            <source>条件欠佳</source>
-            <translation>Unfavorable</translation>
-        </message>
-        <message>
-            <source>具备光学条件</source>
-            <translation>Optical conditions met</translation>
-        </message>
-        <message>
-            <source>ASTROCHRON · %1观测时段（时段内最高 %2°）</source>
-            <translation>ASTROCHRON · %1 observation interval (maximum within interval %2°)</translation>
-        </message>
-        <message>
-            <source>ASTROCHRON · %1过境（峰值 %2°）</source>
-            <translation>ASTROCHRON · %1 pass (peak %2°)</translation>
-        </message>
-        <message>
-            <source>时段内最高点：%1</source>
-            <translation>Peak within interval: %1</translation>
-        </message>
-        <message>
-            <source>最高点：%1</source>
-            <translation>Peak: %1</translation>
-        </message>
-        <message>
-            <source>开始方位：%1 %2°；结束方位：%3 %4°</source>
-            <translation>Start azimuth: %1 %2°; end azimuth: %3 %4°</translation>
-        </message>
-        <message>
-            <source>最低高度角：%1°</source>
-            <translation>Minimum elevation: %1°</translation>
-        </message>
-        <message>
-            <source>当地时间：%1 / %2；时区：%3</source>
-            <translation>Local time: %1 / %2; time zone: %3</translation>
-        </message>
-        <message>
-            <source>轨道历元（UTC）：%1</source>
-            <translation>Orbit epoch (UTC): %1</translation>
-        </message>
-        <message>
-            <source>观测地点：%1</source>
-            <translation>Observer: %1</translation>
-        </message>
-        <message>
-            <source>海拔：%1</source>
-            <translation>Elevation: %1</translation>
-        </message>
-        <message>
-            <source>待填写</source>
-            <translation>Not specified</translation>
-        </message>
-        <message>
-            <source>光学区间（UTC）：%1</source>
-            <translation>Optical intervals (UTC): %1</translation>
-        </message>
-        <message>
-            <source>数据来源：%1</source>
-            <translation>Source: %1</translation>
-        </message>
-        <message>
-            <source>时段开始前已高于最低高度角</source>
-            <translation>Above the minimum elevation before the interval starts</translation>
-        </message>
-        <message>
-            <source>时段结束时仍高于最低高度角</source>
-            <translation>Above the minimum elevation when the interval ends</translation>
         </message>
         <message>
             <source>观测计划保存失败：%1</source>
@@ -1772,8 +1864,12 @@ Range at peak </translation>
             <translation>Local orbital data loaded</translation>
         </message>
         <message>
-            <source>大地水准面数据读取失败</source>
-            <translation>Unable to read geoid data</translation>
+            <source>SeeSat-L / Jay Respler（2022 年构型）</source>
+            <translation>SeeSat-L / Jay Respler (2022 configuration)</translation>
+        </message>
+        <message>
+            <source>手动填写</source>
+            <translation>Manual entry</translation>
         </message>
         <message>
             <source>正在接近</source>
@@ -1800,130 +1896,6 @@ Range at peak </translation>
             <translation>Favorable optical conditions</translation>
         </message>
         <message>
-            <source>进入</source>
-            <translation>Entering </translation>
-        </message>
-        <message>
-            <source>离开</source>
-            <translation>Leaving </translation>
-        </message>
-        <message>
-            <source>本影</source>
-            <translation>Umbra</translation>
-        </message>
-        <message>
-            <source>半影</source>
-            <translation>Penumbra</translation>
-        </message>
-        <message>
-            <source>早于 </source>
-            <translation>Before </translation>
-        </message>
-        <message>
-            <source>晚于 </source>
-            <translation>After </translation>
-        </message>
-        <message>
-            <source>光照条件欠佳</source>
-            <translation>Unfavorable lighting</translation>
-        </message>
-        <message>
-            <source>手动填写</source>
-            <translation>Manual entry</translation>
-        </message>
-        <message>
-            <source>数据库版本较高，请使用对应版本的 ASTROCHRON</source>
-            <translation>Open this database with a compatible version of ASTROCHRON</translation>
-        </message>
-        <message>
-            <source>数据库初始化失败：%1</source>
-            <translation>Could not initialize database: %1</translation>
-        </message>
-        <message>
-            <source>数据库升级失败：%1</source>
-            <translation>Could not upgrade database: %1</translation>
-        </message>
-        <message>
-            <source>快照保存失败：%1</source>
-            <translation>Could not save snapshot: %1</translation>
-        </message>
-        <message>
-            <source>历史资料清理失败：%1</source>
-            <translation>Could not clean up history: %1</translation>
-        </message>
-        <message>
-            <source>已清理 %1 份在线历史快照</source>
-            <translation>Removed %1 online snapshots</translation>
-        </message>
-        <message>
-            <source>轨道下载完成后可整理数据库</source>
-            <translation>Database maintenance is available after the orbit download finishes</translation>
-        </message>
-        <message>
-            <source>正在整理数据库</source>
-            <translation>Database maintenance in progress</translation>
-        </message>
-        <message>
-            <source>数据库已整理</source>
-            <translation>Database maintenance complete</translation>
-        </message>
-        <message>
-            <source>数据库整理失败：%1</source>
-            <translation>Database maintenance failed: %1</translation>
-        </message>
-        <message>
-            <source>，%1 条根数未载入：%2</source>
-            <translation>, %1 element records skipped: %2</translation>
-        </message>
-        <message>
-            <source>请填写有效的资料日期（YYYY-MM-DD）</source>
-            <translation>Enter a valid source date (YYYY-MM-DD)</translation>
-        </message>
-        <message>
-            <source>星等参数保存失败：</source>
-            <translation>Unable to save magnitude settings: </translation>
-        </message>
-        <message>
-            <source>星等参数已保存</source>
-            <translation>Magnitude settings saved</translation>
-        </message>
-        <message>
-            <source>星等参数清除失败：</source>
-            <translation>Unable to clear magnitude settings: </translation>
-        </message>
-        <message>
-            <source>使用内置星等资料</source>
-            <translation>Using bundled magnitude data</translation>
-        </message>
-        <message>
-            <source>星等参数已清除</source>
-            <translation>Magnitude settings cleared</translation>
-        </message>
-        <message>
-            <source>星等表打开失败：</source>
-            <translation>Unable to open magnitude catalog: </translation>
-        </message>
-        <message>
-            <source>文件中没有可用的 QuickSat 星等记录</source>
-            <translation>No usable QuickSat magnitude records in this file</translation>
-        </message>
-        <message>
-            <source>星等资料库写入失败：</source>
-            <translation>Unable to write photometry database: </translation>
-        </message>
-        <message>
-            <source>星等表导入失败：</source>
-            <translation>Unable to import magnitude catalog: </translation>
-        </message>
-        <message>
-            <source>星等表保存失败：</source>
-            <translation>Unable to save magnitude catalog: </translation>
-        </message>
-        <message>
-            <source>已导入 %1 条星等记录，保留 %2 条手动参数，跳过 %3 行空缺或格式异常记录</source>
-            <translation>Imported %1 magnitude records; kept %2 manual entries; skipped %3 empty or invalid records</translation>
-        </message>
-        <message>
             <source>暂无参考星等</source>
             <translation>Reference magnitude unavailable</translation>
         </message>
@@ -1942,6 +1914,34 @@ Range at peak </translation>
         <message>
             <source>相位接近 180°</source>
             <translation>Phase near 180°</translation>
+        </message>
+        <message>
+            <source>早于 </source>
+            <translation>Before </translation>
+        </message>
+        <message>
+            <source>晚于 </source>
+            <translation>After </translation>
+        </message>
+        <message>
+            <source>光照条件欠佳</source>
+            <translation>Unfavorable lighting</translation>
+        </message>
+        <message>
+            <source>进入</source>
+            <translation>Entering </translation>
+        </message>
+        <message>
+            <source>离开</source>
+            <translation>Leaving </translation>
+        </message>
+        <message>
+            <source>本影</source>
+            <translation>Umbra</translation>
+        </message>
+        <message>
+            <source>半影</source>
+            <translation>Penumbra</translation>
         </message>
         <message>
             <source>暂无数据</source>
@@ -2308,6 +2308,21 @@ Peak </translation>
         <message>
             <source>更新检查失败：%1</source>
             <translation>Update check failed: %1</translation>
+        </message>
+    </context>
+    <context>
+        <name>WatchlistModel</name>
+        <message>
+            <source>待计算</source>
+            <translation>Pending</translation>
+        </message>
+        <message>
+            <source>预报计算中</source>
+            <translation>Calculating passes</translation>
+        </message>
+        <message>
+            <source>请选择观测地点</source>
+            <translation>Choose an observer location</translation>
         </message>
     </context>
     <context>

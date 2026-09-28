@@ -7,7 +7,7 @@ import Astrochron
 
 Dialog {
     id: dialog
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     readonly property var info: satellites.planInfo
     property string exportFormat: "csv"
     title: qsTr("导出观测计划")

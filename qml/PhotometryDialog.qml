@@ -6,7 +6,7 @@ import Astrochron
 
 Dialog {
     id: dialog
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     title: qsTr("星等参数")
     modal: true
     anchors.centerIn: Overlay.overlay

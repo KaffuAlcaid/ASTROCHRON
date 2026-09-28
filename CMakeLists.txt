@@ -38,6 +38,27 @@ if(MSVC)
     target_compile_definitions(sgp4 PRIVATE _CRT_SECURE_NO_WARNINGS)
     target_compile_options(sgp4 PRIVATE /utf-8)
 endif()
+
+add_library(astrochron_domain STATIC
+    src/orbit_types.h
+    src/orbital_elements_parser.h src/orbital_elements_parser.cpp
+    src/orbit_propagator.h src/orbit_propagator.cpp
+    src/pass_predictor.h src/pass_predictor.cpp
+    src/satellite_photometry.h src/satellite_photometry.cpp
+    src/satellite_labels.h src/satellite_labels.cpp
+    src/satellite_catalog.h src/satellite_catalog.cpp
+    src/observation_database.h src/observation_database.cpp
+    src/snapshot_repository.h src/snapshot_repository.cpp
+    src/photometry_catalog.h src/photometry_catalog.cpp
+    src/observation_plan.h
+    src/observation_plan_exporter.h src/observation_plan_exporter.cpp
+    src/orbit_frame_calculator.h src/orbit_frame_calculator.cpp
+)
+target_include_directories(astrochron_domain PUBLIC src)
+target_link_libraries(astrochron_domain PUBLIC Qt6::Core Qt6::Sql astronomy_engine sgp4)
+if(MSVC)
+    target_compile_options(astrochron_domain PRIVATE /utf-8 /W4)
+endif()
 set_target_properties(astrochron PROPERTIES OUTPUT_NAME ASTROCHRON)
 if(WIN32)
     enable_language(RC)
@@ -61,8 +82,8 @@ qt_add_qml_module(astrochron
         src/app_state.h src/app_state.cpp
         src/map_data.h src/map_data.cpp
         src/world_map.h src/world_map.cpp
-        src/orbit_engine.h src/orbit_engine.cpp
-        src/satellite_model.h src/satellite_model.cpp
+        src/satellite_controller.h src/satellite_controller.cpp
+        src/watchlist_model.h src/watchlist_model.cpp
         src/weather_model.h src/weather_model.cpp
         src/catalog_model.h src/catalog_model.cpp
         src/orbit_layer.h src/orbit_layer.cpp
@@ -70,11 +91,12 @@ qt_add_qml_module(astrochron
 )
 target_include_directories(astrochron PRIVATE src)
 qt_add_translations(astrochron
+    SOURCE_TARGETS astrochron astrochron_domain
     TS_FILES translations/astrochron_en.ts
     RESOURCE_PREFIX /i18n
     LUPDATE_OPTIONS -no-obsolete -locations none
 )
-target_link_libraries(astrochron PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Sql astronomy_engine sgp4)
+target_link_libraries(astrochron PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network astrochron_domain)
 if(MSVC)
     target_compile_options(astrochron PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/utf-8> $<$<COMPILE_LANGUAGE:CXX>:/W4>)
 endif()

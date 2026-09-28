@@ -11,6 +11,7 @@ namespace Orbit {
 using Vector = std::array<double, 3>;
 
 struct Observer {
+    // Angles are degrees; height is above the reference ellipsoid in km.
     double latitude = 0;
     double longitude = 0;
     double heightKm = 0;
@@ -36,6 +37,8 @@ struct PropagationContext {
 };
 
 struct State {
+    // UTC Unix seconds, distances in km, speeds in km/s, angles in degrees.
+    // elevationRate is degrees/s. Position vectors name their reference frame.
     double time = 0;
     Vector temePosition;
     Vector temeVelocity;
@@ -58,7 +61,7 @@ struct Satellite {
     qint64 number = 0;
     QString name;
     QString internationalId;
-    double epoch = 0;
+    double epoch = 0; // UTC Unix seconds
     QJsonObject elements;
     elsetrec constants{};
 };
@@ -77,19 +80,4 @@ struct Track {
     QVector<Pass> passes;
 };
 
-Sun sunAt(double unixSeconds);
-QString formatEpoch(double unixSeconds);
-ObserverGeometry observerGeometry(const Observer &observer);
-PropagationContext propagationContext(double unixSeconds, const ObserverGeometry &observer);
-std::optional<Satellite> fromOmm(const QJsonObject &object, QString &error);
-QVector<Satellite> parse(const QByteArray &data, QString &error, int &skipped);
-std::optional<State> position(const Satellite &satellite, const PropagationContext &context);
-std::optional<State> look(const Satellite &satellite, const PropagationContext &context);
-std::optional<State> propagate(const Satellite &satellite, const PropagationContext &context);
-Track track(const Satellite &satellite, double start, double end, const Observer &observer, const Track &previous = {});
-QVector<Pass> predictPasses(const Satellite &satellite, double start, double end, const Observer &observer, const QVector<State> &samples = {});
-std::optional<double> apparentMagnitude(const State &state, double referenceMagnitude, double referencePhase);
-QString displayName(const Satellite &satellite);
-QString illuminationName(int illumination);
-QString directionName(double azimuth);
-}
+} // namespace Orbit

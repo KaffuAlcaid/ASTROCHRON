@@ -5,7 +5,7 @@ import Astrochron
 
 Dialog {
     id: dialog
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     readonly property var candidates: satellites.cleanupCandidates
     title: qsTr("在线历史快照")
     modal: true

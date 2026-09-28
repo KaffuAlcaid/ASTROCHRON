@@ -6,7 +6,7 @@ import Astrochron
 ColumnLayout {
     id: pane
     required property AppState clock
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     required property WeatherModel weather
     property var skyPass: ({})
     property var obs: satellites.observation
@@ -116,6 +116,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 178
                     trajectory: pane.satellites.trajectory
+                    maximumTrackGap: pane.satellites.maximumTrackGap
                     observation: pane.obs
                     selectedTime: pane.clock.unixTime
                     passTime: pane.skyPass.peak || 0

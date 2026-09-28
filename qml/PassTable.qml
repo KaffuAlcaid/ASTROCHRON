@@ -6,7 +6,7 @@ import Astrochron
 ColumnLayout {
     id: table
     required property AppState clock
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     property var nextPass: ({})
     required property Action exportAction
     spacing: 6

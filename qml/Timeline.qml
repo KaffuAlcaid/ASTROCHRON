@@ -6,7 +6,7 @@ import Astrochron
 Rectangle {
     id: timeline
     required property AppState clock
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     required property Action nowAction
     implicitHeight: 94
     color: Theme.surface

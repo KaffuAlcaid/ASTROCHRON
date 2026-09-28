@@ -7,7 +7,7 @@ Dialog {
     id: dialog
     required property AppState clock
     required property WeatherModel weather
-    required property SatelliteModel satellites
+    required property SatelliteController satellites
     required property var mapView
     title: qsTr("设置")
     modal: true

@@ -3,6 +3,7 @@ import QtQuick
 Canvas {
     id: sky
     property var trajectory: []
+    required property real maximumTrackGap
     property var observation: ({})
     property real selectedTime: 0
     property real passTime: 0
@@ -22,8 +23,8 @@ Canvas {
         }
         if (nearest < 0) return [];
         let start = nearest, end = nearest;
-        while (start > 0 && trajectory[start - 1].elevation >= 0 && trajectory[start].time - trajectory[start - 1].time <= 31) --start;
-        while (end + 1 < trajectory.length && trajectory[end + 1].elevation >= 0 && trajectory[end + 1].time - trajectory[end].time <= 31) ++end;
+        while (start > 0 && trajectory[start - 1].elevation >= 0 && trajectory[start].time - trajectory[start - 1].time <= maximumTrackGap) --start;
+        while (end + 1 < trajectory.length && trajectory[end + 1].elevation >= 0 && trajectory[end + 1].time - trajectory[end].time <= maximumTrackGap) ++end;
         return trajectory.slice(start, end + 1);
     }
     onPassSamplesChanged: requestPaint()

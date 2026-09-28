@@ -142,7 +142,7 @@ ApplicationWindow {
     AppState {
         id: appState
     }
-    SatelliteModel {
+    SatelliteController {
         id: satelliteModel
         clock: appState
     }
