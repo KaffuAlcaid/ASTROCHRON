@@ -1,5 +1,7 @@
 # 第三方数据与软件
 
+简体中文 | [English](THIRD_PARTY_NOTICES.en.md)
+
 ## CelesTrak
 
 卫星轨道根数来自 [CelesTrak](https://celestrak.org/NORAD/elements/)，通过 [GP 数据服务](https://celestrak.org/NORAD/documentation/gp-data-formats.php) 获取

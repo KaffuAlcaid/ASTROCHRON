@@ -6,6 +6,8 @@
 
 <p align="center">查看卫星轨迹、推演过境时刻、规划观测的桌面应用</p>
 
+<p align="center">简体中文 | <a href="README.en.md">English</a></p>
+
 ![星纪主界面：卫星地图、观测信息与过境预报](docs/images/overview.png)
 
 ## 功能

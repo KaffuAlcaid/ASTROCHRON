@@ -1,5 +1,7 @@
 # 数据来源
 
+简体中文 | [English](data-sources.en.md)
+
 [返回首页](../README.md) · [计算说明](calculations.md) · [第三方声明](../THIRD_PARTY_NOTICES.md)
 
 适用版本：`v0.1.0`，公开参考资料核对截至 **2026-09-22**

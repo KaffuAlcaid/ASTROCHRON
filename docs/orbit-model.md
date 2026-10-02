@@ -1,5 +1,7 @@
 # SGP4 轨道传播原理
 
+简体中文 | [English](orbit-model.en.md)
+
 [返回首页](../README.md) · [计算说明](calculations.md) · [数据来源](data-sources.md)
 
 SGP4 根据一组轨道根数，推算卫星在指定时刻的位置与速度，ASTROCHRON 再结合地球自转和观测地点，算出地图位置、方位角、高度角与距离
@@ -177,4 +179,4 @@ $`\dot d`$ 为正时卫星正在远离，为负时正在接近，程序将它用
 
 [^vallado]: Vallado, D. A.、Crawford, P.、Hujsak, R.、Kelso, T. S.，2006，*Revisiting Spacetrack Report #3*，AIAA 2006-6753，本文参阅 Revision 3，其中第 II 节讨论模型与输入约定，第 III 节介绍实现，第 VII 节比较不同实现的计算结果，附录 C 说明坐标转换，[论文与配套资料](https://celestrak.org/publications/AIAA/2006-6753/)，[Revision 3 全文](https://celestrak.org/publications/AIAA/2006-6753/AIAA-2006-6753-Rev3.pdf)
 
-[^implementation]: ASTROCHRON 的具体常数、分支及公式对应仓库中的 [Vallado SGP4 实现](../third_party/sgp4/SGP4.cpp)和[轨道与观测计算](../src/orbit_engine.cpp)，软件与数据的许可见[第三方声明](../THIRD_PARTY_NOTICES.md)
+[^implementation]: ASTROCHRON 的具体常数、分支及公式对应仓库中的 [Vallado SGP4 实现](../third_party/sgp4/SGP4.cpp)、[轨道与观测计算](../src/orbit_propagator.cpp)和[过境预测](../src/pass_predictor.cpp)，软件与数据的许可见[第三方声明](../THIRD_PARTY_NOTICES.md)

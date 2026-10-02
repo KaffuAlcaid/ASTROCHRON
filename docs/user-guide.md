@@ -1,5 +1,7 @@
 # 使用手册
 
+简体中文 | [English](user-guide.en.md)
+
 [快速开始](../README.md#快速开始) · [数据来源](data-sources.md) · [计算说明](calculations.md)
 
 ## 选择观测地点

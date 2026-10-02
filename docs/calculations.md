@@ -1,5 +1,7 @@
 # 计算说明
 
+简体中文 | [English](calculations.en.md)
+
 [返回首页](../README.md) · [数据来源](data-sources.md) · [SGP4 原理](orbit-model.md)
 
 适用版本：`v0.1.0`
