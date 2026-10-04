@@ -4,6 +4,14 @@
 
 [Quick Start](../README.en.md#quick-start) · [Data Sources](data-sources.en.md) · [Calculation Notes](calculations.en.md)
 
+## Installation and Updates
+
+When using the Windows installer, choose an installation directory in the setup wizard and select the same directory when updating an existing installation
+
+If using the portable ZIP, extract the entire archive before running `ASTROCHRON.exe`
+
+Observing locations, the watchlist, and local orbital data are stored under the current Windows user account and are preserved when installing over an existing installation, but are not automatically migrated when switching accounts
+
 ## Selecting an Observing Location
 
 Click "Change location" at the top of the main window and search for a city or enter a location name and coordinates. You can also click "Map location" on the map toolbar and select the observing position on the map
