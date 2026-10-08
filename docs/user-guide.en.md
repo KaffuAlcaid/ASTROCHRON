@@ -6,11 +6,13 @@
 
 ## Installation and Updates
 
-When using the Windows installer, choose an installation directory in the setup wizard and select the same directory when updating an existing installation
+When using the Windows installer, choose an installation directory in the setup wizard; exit the application and select the same directory when updating an existing installation
 
-If using the portable ZIP, extract the entire archive before running `ASTROCHRON.exe`
+If using the portable ZIP, extract the entire archive before running `ASTROCHRON.exe`; when updating, exit the application and extract the complete new archive into a new directory instead of replacing only the executable
 
-Observing locations, the watchlist, and local orbital data are stored under the current Windows user account and are preserved when installing over an existing installation, but are not automatically migrated when switching accounts
+If using the Linux AppImage, make the file executable before running it; when updating, exit the application and replace the old file with the complete new AppImage
+
+Observing locations, the watchlist, and local orbital data are stored under the current user account and are preserved when installing over an existing installation or replacing application files, but are not automatically migrated when switching accounts
 
 ## Selecting an Observing Location
 

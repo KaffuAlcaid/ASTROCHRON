@@ -12,9 +12,9 @@
 
 ## 下载
 
-适用于 Windows 11 x64，前往 [Releases](https://github.com/KaffuAlcaid/ASTROCHRON/releases/latest) 下载 Windows 安装器或免安装 ZIP
+支持 Windows 10 / 11 x64 和 Linux x86_64，前往 [Releases](https://github.com/KaffuAlcaid/ASTROCHRON/releases/latest) 下载 Windows 安装器、免安装 ZIP 或 Linux AppImage
 
-使用 ZIP 时，请完整解压后运行 `ASTROCHRON.exe`
+使用 ZIP 时，请完整解压后运行 `ASTROCHRON.exe`；使用 AppImage 时，请赋予文件执行权限后运行
 
 ## 功能
 

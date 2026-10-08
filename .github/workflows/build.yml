@@ -1,4 +1,4 @@
-name: Windows Build
+name: Build and Package
 
 on:
   push:
@@ -40,13 +40,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: windows-build-${{ github.event_name }}-${{ inputs.ref || github.ref }}
+  group: build-${{ github.event_name }}-${{ inputs.ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
   windows:
     runs-on: windows-2022
     timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     defaults:
       run:
         shell: pwsh
@@ -138,3 +140,191 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           compression-level: 0
+
+  linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      QT_VERSION: '6.11.2'
+      BUILD_REF: ${{ inputs.ref || github.ref }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential libgl1-mesa-dev libegl1-mesa-dev libopengl0 \
+            libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 \
+            libxcb-keysyms1 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 \
+            libwayland-client0 libwayland-cursor0 libwayland-egl1 libfuse2 \
+            xvfb xauth desktop-file-utils
+
+      - name: Install build tools
+        run: python -m pip install cmake==4.4.3 ninja==1.13.2
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4.4.1
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+          modules: qtshadertools
+          setup-python: false
+          aqtsource: 'git+https://github.com/miurahr/aqtinstall.git@076e1659807d0b362a3ed684d54c2e9c775eb9c7'
+          cache: true
+
+      - name: Configure application
+        run: |
+          npm ci --ignore-scripts
+          cmake -S . -B .cache/build/Linux -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+
+      - name: Read application version
+        id: version
+        run: |
+          version=$(cat .cache/build/Linux/version.txt)
+          if [[ "$BUILD_REF" == refs/tags/* ]]; then
+            test "$BUILD_REF" = "refs/tags/v$version"
+          elif [[ "$BUILD_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            test "$BUILD_REF" = "v$version"
+          fi
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build and collect application files
+        run: |
+          cmake --build .cache/build/Linux --parallel 2
+          cmake --install .cache/build/Linux --prefix "$PWD/.cache/stage/AppDir/usr"
+
+      - name: Download AppImage tools
+        run: |
+          mkdir -p .cache/toolchains/appimage
+          cd .cache/toolchains/appimage
+          curl -fL --retry 3 -o linuxdeploy-x86_64.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-x86_64.AppImage
+          curl -fL --retry 3 -o linuxdeploy-plugin-qt-x86_64.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          curl -fL --retry 3 -o runtime-x86_64 \
+            https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
+          printf '%s\n' \
+            'c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d  linuxdeploy-x86_64.AppImage' \
+            'cfc1055b2b9dbc08412b579f20990b7b41a17b61beaa5847dc9477c96c9e9617  linuxdeploy-plugin-qt-x86_64.AppImage' \
+            '156f4bdbde9c52d01814600013e0a273f0118dc2de98975f3c8c63427ec79074  runtime-x86_64' | sha256sum --check
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage runtime-x86_64
+
+      - name: Create AppImage
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p .cache/packages
+          appdir="$PWD/.cache/stage/AppDir"
+          tools="$PWD/.cache/toolchains/appimage"
+          export QMAKE="$QT_ROOT_DIR/bin/qmake"
+          export LD_LIBRARY_PATH="$QT_ROOT_DIR/lib"
+          export QML_SOURCES_PATHS="$PWD/qml"
+          export EXTRA_QT_MODULES='svg;waylandcompositor'
+          export EXTRA_PLATFORM_PLUGINS='libqwayland.so'
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export LDAI_RUNTIME_FILE="$tools/runtime-x86_64"
+          export LDAI_OUTPUT="$PWD/.cache/packages/ASTROCHRON-v$VERSION-linux-x86_64.AppImage"
+          export LDAI_VERSION="$VERSION"
+          export LDAI_NO_APPSTREAM=1
+          export ARCH=x86_64
+          "$tools/linuxdeploy-x86_64.AppImage" --appdir "$appdir" \
+            --executable "$appdir/usr/bin/ASTROCHRON" \
+            --desktop-file "$appdir/usr/share/applications/io.github.KaffuAlcaid.ASTROCHRON.desktop" \
+            --icon-file "$appdir/usr/share/icons/hicolor/256x256/apps/astrochron.png"
+          "$tools/linuxdeploy-plugin-qt-x86_64.AppImage" --appdir "$appdir" \
+            --exclude-library libqsqlibase.so --exclude-library libqsqlmimer.so \
+            --exclude-library libqsqlmysql.so --exclude-library libqsqloci.so \
+            --exclude-library libqsqlodbc.so --exclude-library libqsqlpsql.so
+          "$tools/linuxdeploy-x86_64.AppImage" --appdir "$appdir" --output appimage
+
+      - name: Check packaged application startup
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p .cache/startup/config .cache/startup/data .cache/startup/cache
+          desktop-file-validate .cache/stage/AppDir/usr/share/applications/io.github.KaffuAlcaid.ASTROCHRON.desktop
+          mv "$QT_ROOT_DIR" "$QT_ROOT_DIR.build-only"
+          trap 'mv "$QT_ROOT_DIR.build-only" "$QT_ROOT_DIR"' EXIT
+          set +e
+          timeout --kill-after=5s 15s xvfb-run -a env \
+            -u LD_LIBRARY_PATH -u QT_PLUGIN_PATH -u QML_IMPORT_PATH -u QML2_IMPORT_PATH \
+            APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 \
+            XDG_CONFIG_HOME="$PWD/.cache/startup/config" \
+            XDG_DATA_HOME="$PWD/.cache/startup/data" \
+            XDG_CACHE_HOME="$PWD/.cache/startup/cache" \
+            ".cache/packages/ASTROCHRON-v$VERSION-linux-x86_64.AppImage" > .cache/startup/app.log 2>&1
+          status=$?
+          set -e
+          cat .cache/startup/app.log
+          test "$status" -eq 124
+          if grep -Ei 'font families specified are invalid|QQmlApplicationEngine failed|Cannot load library|module .* is not installed' .cache/startup/app.log; then
+            exit 1
+          fi
+
+      - name: Store Linux package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ASTROCHRON-v${{ steps.version.outputs.version }}-linux-x86_64
+          path: .cache/packages/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, linux]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+      WINDOWS_VERSION: ${{ needs.windows.outputs.version }}
+      LINUX_VERSION: ${{ needs.linux.outputs.version }}
+    steps:
+      - name: Download release packages
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: ASTROCHRON-v${{ needs.windows.outputs.version }}-*
+          path: .cache/packages
+          merge-multiple: true
+
+      - name: Create draft release
+        run: |
+          test "$WINDOWS_VERSION" = "$LINUX_VERSION"
+          test "$TAG" = "v$WINDOWS_VERSION"
+          if is_draft=$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null); then
+            test "$is_draft" = true
+          else
+            gh release create "$TAG" --verify-tag --title "$TAG" --notes '' --draft
+          fi
+          gh release upload "$TAG" \
+            ".cache/packages/ASTROCHRON-$TAG-windows-x64-setup.exe" \
+            ".cache/packages/ASTROCHRON-$TAG-windows-x64.zip" \
+            ".cache/packages/ASTROCHRON-$TAG-linux-x86_64.AppImage" --clobber

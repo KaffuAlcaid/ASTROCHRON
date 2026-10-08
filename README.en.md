@@ -12,9 +12,9 @@
 
 ## Download
 
-Available for Windows 11 x64, with a Windows installer and portable ZIP on the [Releases](https://github.com/KaffuAlcaid/ASTROCHRON/releases/latest) page
+Supports Windows 10 / 11 x64 and Linux x86_64, with a Windows installer, portable ZIP, and Linux AppImage on the [Releases](https://github.com/KaffuAlcaid/ASTROCHRON/releases/latest) page
 
-If using the ZIP, extract the entire archive before running `ASTROCHRON.exe`
+If using the ZIP, extract the entire archive before running `ASTROCHRON.exe`; if using the AppImage, make the file executable before running it
 
 ## Features
 
