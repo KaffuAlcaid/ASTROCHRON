@@ -146,7 +146,14 @@ qt_add_shaders(astrochron daynight_shader
     FILES shaders/daynight.frag
 )
 
-install(TARGETS astrochron RUNTIME DESTINATION .)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    install(TARGETS astrochron RUNTIME DESTINATION bin)
+    install(FILES packaging/linux/io.github.KaffuAlcaid.ASTROCHRON.desktop DESTINATION share/applications)
+    install(FILES assets/app-icon/astrochron-256.png
+        DESTINATION share/icons/hicolor/256x256/apps RENAME astrochron.png)
+else()
+    install(TARGETS astrochron RUNTIME DESTINATION .)
+endif()
 install(FILES LICENSE THIRD_PARTY_NOTICES.md DESTINATION .)
 install(FILES third_party/astronomy-engine/LICENSE DESTINATION licenses/astronomy-engine)
 install(FILES assets/icons/LICENSE DESTINATION licenses/lucide)

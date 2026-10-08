@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ASTROCHRON
+Comment=Satellite tracking and observation planning
+Exec=ASTROCHRON
+Icon=astrochron
+Terminal=false
+Categories=Science;Astronomy;

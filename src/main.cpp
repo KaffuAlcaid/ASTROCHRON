@@ -16,6 +16,9 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName(QStringLiteral("ASTROCHRON"));
     QCoreApplication::setApplicationVersion(QStringLiteral(ASTROCHRON_VERSION));
     QGuiApplication::setApplicationDisplayName(QStringLiteral("ASTROCHRON"));
+#ifdef Q_OS_LINUX
+    QGuiApplication::setDesktopFileName(QStringLiteral("io.github.KaffuAlcaid.ASTROCHRON"));
+#endif
     app.setWindowIcon(QIcon(QStringLiteral(":/app/astrochron.ico")));
     QQuickStyle::setStyle(QStringLiteral("Basic"));
     QTranslator translations;

@@ -61,7 +61,7 @@ Canvas {
         ctx.lineTo(cx, cy + radius);
         ctx.stroke();
         ctx.fillStyle = textColor;
-        ctx.font = "11px 'Microsoft YaHei UI'";
+        ctx.font = "11px " + Theme.fontFamily;
         ctx.textAlign = "center";
         ctx.fillText(directions[0], cx, cy - radius - 8);
         ctx.fillText(directions[1], cx, cy + radius + 17);

@@ -3,8 +3,8 @@ import QtQuick
 
 QtObject {
     property bool dark: false
-    readonly property string fontFamily: "Microsoft YaHei UI"
-    readonly property string numberFont: "Consolas"
+    readonly property string fontFamily: Qt.platform.os === "linux" ? "sans-serif" : "Microsoft YaHei UI"
+    readonly property string numberFont: Qt.platform.os === "linux" ? "monospace" : "Consolas"
     readonly property int bodySize: 13
     readonly property int numberSize: 14
     readonly property int captionSize: 11
